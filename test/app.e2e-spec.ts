@@ -34,6 +34,19 @@ describe('API SAN (e2e)', () => {
       .expect(401);
   });
 
+  it('POST /auth/registro rechaza correo duplicado', async () => {
+    const datos = { nombre: 'Ana', correo: 'ana@correo.com', clave: '123456' };
+    await request(app.getHttpServer())
+      .post('/auth/registro')
+      .send(datos)
+      .expect(201);
+
+    return request(app.getHttpServer())
+      .post('/auth/registro')
+      .send(datos)
+      .expect(409);
+  });
+
   it('POST /busquedas devuelve resultados ordenados por puntaje', () => {
     return request(app.getHttpServer())
       .post('/busquedas')

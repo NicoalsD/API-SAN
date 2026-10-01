@@ -1,4 +1,4 @@
-import { UnauthorizedException } from '@nestjs/common';
+import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from './auth.service';
 
@@ -28,5 +28,15 @@ describe('AuthService', () => {
     expect(() =>
       service.login({ correo: 'nadie@correo.com', clave: 'mala' }),
     ).toThrow(UnauthorizedException);
+  });
+
+  it('lanza error si el correo ya esta registrado', () => {
+    expect(() =>
+      service.registrar({
+        nombre: 'Nicolas',
+        correo: 'nicolas@correo.com',
+        clave: '123456',
+      }),
+    ).toThrow(ConflictException);
   });
 });

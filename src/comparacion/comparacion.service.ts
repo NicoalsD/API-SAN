@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CatalogoService } from '../catalogo/catalogo.service';
 import {
   ComparacionDto,
@@ -13,6 +17,12 @@ export class ComparacionService {
   constructor(private readonly catalogoService: CatalogoService) {}
 
   crear(datos: ComparacionRequestDto) {
+    if (new Set(datos.ofertaIds).size !== datos.ofertaIds.length) {
+      throw new BadRequestException(
+        'No se pueden repetir ofertas en la comparacion',
+      );
+    }
+
     const ofertas = datos.ofertaIds.map((id) =>
       this.catalogoService.obtenerOferta(id),
     );

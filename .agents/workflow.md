@@ -16,6 +16,7 @@
 ## Pull Requests
 
 - Base siempre `develop`. Requiere 2 aprobaciones (ruleset de GitHub) para mergear.
+- Las aprobaciones van sin comentarios: solo aprobar, sin body ni review comments.
 - Plantilla obligatoria del cuerpo del PR:
 
 ~~~md

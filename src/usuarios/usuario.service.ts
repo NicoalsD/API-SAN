@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { FavoritoDto, PreferenciaDto } from './usuario.dto';
 
 interface Usuario {
@@ -39,9 +39,12 @@ export class UsuarioService {
 
   agregarFavorito(id: string, datos: FavoritoDto) {
     const usuario = this.buscarUsuario(id);
-    if (!usuario.favoritos.includes(datos.ofertaId)) {
-      usuario.favoritos.push(datos.ofertaId);
+    if (usuario.favoritos.includes(datos.ofertaId)) {
+      throw new ConflictException(
+        `La oferta ${datos.ofertaId} ya esta en favoritos`,
+      );
     }
+    usuario.favoritos.push(datos.ofertaId);
 
     return {
       message: 'Favorito agregado',
@@ -51,6 +54,11 @@ export class UsuarioService {
 
   eliminarFavorito(id: string, ofertaId: string) {
     const usuario = this.buscarUsuario(id);
+    if (!usuario.favoritos.includes(ofertaId)) {
+      throw new NotFoundException(
+        `La oferta ${ofertaId} no esta en favoritos`,
+      );
+    }
     usuario.favoritos = usuario.favoritos.filter(
       (favorito) => favorito !== ofertaId,
     );
