@@ -20,6 +20,8 @@
 - Plantilla obligatoria del cuerpo del PR:
 
 ~~~md
+<img width="671" height="201" alt="image" src="https://github.com/user-attachments/assets/689ab860-f8d0-4235-ac19-f6f0b341c8ac" />
+
 :construction_worker: Dev: <Nombre>
 
 ## Cambios (clases, archivos, etc)
@@ -38,4 +40,5 @@ De commits:
 feat: mensaje del commit
 ~~~
 
+- El banner de la cooperativa va al inicio del cuerpo de todo PR.
 - En `## Cambios` listar las clases y archivos tocados, con ruta y descripcion.

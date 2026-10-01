@@ -7,7 +7,7 @@ API REST en NestJS para busqueda, consulta y comparacion de ofertas academicas: 
 - ANTES de cualquier cambio: `git pull` sobre `develop` para evitar conflictos. Si hay cambios sin commitear, resolver o preguntar antes de continuar.
 - Rama por defecto: `develop`. No trabajar directo sobre ella; crear `feature/<nombre>` desde `develop`.
 - Remoto: https://github.com/NicoalsD/API-SAN.git
-- Reglas de ramas, commits y plantilla de PR: `.agents/workflow.md`. Todo PR necesita 2 aprobaciones para mergear (ruleset de GitHub).
+- Reglas de ramas, commits y plantilla de PR: `.agents/workflow.md`. Todo PR lleva el banner de la cooperativa al inicio del cuerpo y necesita 2 aprobaciones para mergear (ruleset de GitHub).
 
 ## Alcance actual (respetar)
 
