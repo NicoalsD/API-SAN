@@ -7,24 +7,26 @@ API REST en NestJS para busqueda, consulta y comparacion de ofertas academicas: 
 - ANTES de cualquier cambio: `git pull` sobre `develop` para evitar conflictos. Si hay cambios sin commitear, resolver o preguntar antes de continuar.
 - Rama por defecto: `develop`. No trabajar directo sobre ella; crear `feature/<nombre>` desde `develop`.
 - Remoto: https://github.com/NicoalsD/API-SAN.git
+- Reglas de ramas, commits y plantilla de PR: `.agents/workflow.md`. Todo PR necesita 2 aprobaciones para mergear (ruleset de GitHub).
 
 ## Alcance actual (respetar)
 
-- Implementar solo Controllers, DTOs y Services, simples.
-- NO implementar todavia: base de datos, ORM (TypeORM/Prisma), repositorios, migraciones, Redis, integracion SNIES/MEN, JWT/BCrypt real. Agregarlos solo si se pide.
-- El proyecto aun no tiene `package.json`; se inicializa con NestJS cuando se indique.
+- Arquitectura por capas: Controller (solo HTTP y mapeo request/response), Service (toda la logica), DTOs.
+- Datos en memoria dentro de los Services (mock). NO implementar todavia: base de datos, ORM (TypeORM/Prisma), repositorios, migraciones, Redis, integracion SNIES/MEN, JWT/BCrypt real. Agregarlos solo si se pide.
 - Nombres de clases, DTOs y rutas en espanol, iguales al diagrama. No renombrar.
+- Simplicidad: seguir el estilo de `IvonneBarco/book-nestjs-5b` (DTOs con class-validator, excepciones de Nest con mensajes en espanol, respuestas `{ message, data }` o `{ msg }`).
 
-## Capas (arquitectura por capas del diagrama)
+## Estructura (capas)
 
-- Controller: solo HTTP y mapeo request/response. Sin logica de negocio ni acceso a datos.
-- Service: filtros, scoring y comparacion viven aqui. `BusquedaService` usa `ScoringService`.
-- DTO: Request y Response separados, un archivo por DTO.
+- Una carpeta por recurso en `src/`: `auth/`, `usuarios/`, `busquedas/`, `catalogo/`, `comparacion/`.
+- Archivos por recurso: `<recurso>.controller.ts`, `<recurso>.service.ts`, `<singular>.dto.ts` (todas las clases Dto del recurso en ese unico archivo).
+- Sin archivo `<recurso>.module.ts`: registrar controllers y providers directo en `src/app.module.ts` (como la profe).
+- `src/main.ts` usa `ValidationPipe` global.
 
 | Controller | Endpoints | Service |
 |---|---|---|
 | AuthController | POST /auth/registro, POST /auth/login, POST /auth/refresh | AuthService |
-| UsuarioController | GET/PUT /usuarios/{id}/preferencias, GET/POST/DELETE /favoritos | UsuarioService |
+| UsuarioController | GET/PUT /usuarios/{id}/preferencias, GET/POST /usuarios/{id}/favoritos, DELETE /usuarios/{id}/favoritos/{ofertaId} | UsuarioService |
 | BusquedaController | POST /busquedas, GET /busquedas/{id}, GET /busquedas/{id}/resultados | BusquedaService + ScoringService |
 | ComparacionController | POST /comparaciones, GET /comparaciones/{id}, DELETE /comparaciones/{id} | ComparacionService |
 | CatalogoController | GET /carreras, GET /carreras/{id}, GET /universidades, GET /ofertas/{id} | CatalogoService |
@@ -37,43 +39,12 @@ DTOs clave (nombres exactos del diagrama):
 - `OfertaAcademicaDTO`: costo, modalidad, duracion, acreditacion, SNIES.
 - `PreferenciaDTO`: pesos por criterio.
 
-## Comandos (NestJS estandar, cuando exista package.json)
+## Comandos
 
-- Dev: `npm run start:dev`
+- Instalar: `npm install`
+- Dev: `npm run start:dev` (http://localhost:3000)
 - Build: `npm run build`
-- Lint: `npm run lint`
-- Tests: `npm test`
-- Un solo test: `npm test -- busqueda.service`
-
-## Convencion de Pull Request (obligatoria)
-
-Plantilla del cuerpo del PR:
-
-```md
-:construction_worker: Dev: <Nombre>
-
-## Cambios (clases, archivos, etc)
-* `ruta/archivo.ts:` Descripcion corta del cambio.
-
-## Detalles
-* Detalle tecnico 1.
-* Detalle tecnico 2.
-
-## Pantallazos funcionalidades
-<img width="683" height="379" alt="image" src="https://github.com/user-attachments/assets/<id>" />
-
-De branches:
-
-feature/<nombre>
-
-De commits:
-
-fix: mensaje del commit
-```
-
-Reglas:
-
-- Ramas con prefijo `feature/<nombre>` (ej. `feature/styles`).
-- Commits estilo conventional: `fix:`, `feat:`, `docs:`, etc.
-- El banner (imagen) siempre va; las capturas adicionales dependen de los cambios.
-- En `## Cambios` listar las clases y archivos tocados, con ruta y descripcion.
+- Lint: `npm run lint` (revisa `src/` y `test/`)
+- Tests: `npm test` (solo `src/**/*.spec.ts`)
+- Un solo test: `npm test -- auth`
+- E2E: `npm run test:e2e`
