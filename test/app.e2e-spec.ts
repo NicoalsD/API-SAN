@@ -48,6 +48,26 @@ describe('API SAN (e2e)', () => {
       });
   });
 
+  it('GET /carreras lista el catalogo', () => {
+    return request(app.getHttpServer())
+      .get('/carreras')
+      .expect(200)
+      .expect((respuesta) => {
+        expect(respuesta.body.length).toBeGreaterThan(0);
+      });
+  });
+
+  it('POST /comparaciones devuelve la tabla comparativa', () => {
+    return request(app.getHttpServer())
+      .post('/comparaciones')
+      .send({ ofertaIds: ['1', '5'] })
+      .expect(201)
+      .expect((respuesta) => {
+        expect(respuesta.body.data.tabla).toHaveLength(2);
+        expect(respuesta.body.data.mejorOfertaId).toBeDefined();
+      });
+  });
+
   afterEach(async () => {
     await app.close();
   });
