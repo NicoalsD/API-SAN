@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { AuthResponseDto, LoginDto, RegistroDto } from './auth.dto';
 
 interface Usuario {
@@ -20,6 +24,15 @@ export class AuthService {
   ];
 
   registrar(datos: RegistroDto) {
+    const existente = this.usuarios.find(
+      (usuario) => usuario.correo === datos.correo,
+    );
+    if (existente !== undefined) {
+      throw new ConflictException(
+        `El correo ${datos.correo} ya esta registrado`,
+      );
+    }
+
     const nuevoUsuario: Usuario = {
       id: `${new Date().getTime()}`,
       ...datos,

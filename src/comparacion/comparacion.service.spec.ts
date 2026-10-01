@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { CatalogoService } from '../catalogo/catalogo.service';
 import { ComparacionService } from './comparacion.service';
@@ -21,6 +21,12 @@ describe('ComparacionService', () => {
     expect(resultado.data.mejorOfertaId).toBe('1');
     expect(resultado.data.tabla[0].puntaje).toBeGreaterThanOrEqual(
       resultado.data.tabla[1].puntaje,
+    );
+  });
+
+  it('rechaza ofertas repetidas', () => {
+    expect(() => service.crear({ ofertaIds: ['1', '1'] })).toThrow(
+      BadRequestException,
     );
   });
 
