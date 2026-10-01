@@ -12,7 +12,7 @@ API REST en NestJS para busqueda, consulta y comparacion de ofertas academicas: 
 ## Alcance actual (respetar)
 
 - Arquitectura por capas: Controller (solo HTTP y mapeo request/response), Service (toda la logica), DTOs.
-- Datos en memoria dentro de los Services (mock). NO implementar todavia: base de datos, ORM (TypeORM/Prisma), repositorios, migraciones, Redis, integracion SNIES/MEN, JWT/BCrypt real. Agregarlos solo si se pide.
+- Datos en memoria (mock): las ofertas compartidas viven en `src/common/ofertas.mock.ts` (catalogo, busqueda y comparacion las reutilizan); el resto de datos mock, en cada Service. NO implementar todavia: base de datos, ORM (TypeORM/Prisma), repositorios, migraciones, Redis, integracion SNIES/MEN, JWT/BCrypt real. Agregarlos solo si se pide.
 - Nombres de clases, DTOs y rutas en espanol, iguales al diagrama. No renombrar.
 - Simplicidad: seguir el estilo de `IvonneBarco/book-nestjs-5b` (DTOs con class-validator, excepciones de Nest con mensajes en espanol, respuestas `{ message, data }` o `{ msg }`).
 

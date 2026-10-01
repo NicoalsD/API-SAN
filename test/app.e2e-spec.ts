@@ -34,6 +34,20 @@ describe('API SAN (e2e)', () => {
       .expect(401);
   });
 
+  it('POST /busquedas devuelve resultados ordenados por puntaje', () => {
+    return request(app.getHttpServer())
+      .post('/busquedas')
+      .send({ carrera: 'Ingenieria de Sistemas', costoMax: 25000000 })
+      .expect(201)
+      .expect((respuesta) => {
+        const resultados = respuesta.body.data.resultados;
+        expect(resultados.length).toBeGreaterThan(0);
+        expect(resultados[0].puntaje).toBeGreaterThanOrEqual(
+          resultados[resultados.length - 1].puntaje,
+        );
+      });
+  });
+
   afterEach(async () => {
     await app.close();
   });
