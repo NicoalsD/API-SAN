@@ -48,3 +48,4 @@ DTOs clave (nombres exactos del diagrama):
 - Tests: `npm test` (solo `src/**/*.spec.ts`)
 - Un solo test: `npm test -- auth`
 - E2E: `npm run test:e2e`
+- Nota tests: jest corre en modo ESM (`NODE_OPTIONS=--experimental-vm-modules` ya incluido en los scripts) porque Nest 12 (`@nestjs/common`) es ESM puro. No quitar `tsconfig.spec.json` ni el override de transforms en `jest.config.ts` y `test/jest-e2e.json`.
