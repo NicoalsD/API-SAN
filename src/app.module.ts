@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import configuracion from './config/configuracion';
 import { AuthController } from './auth/auth.controller';
 import { AuthService } from './auth/auth.service';
 import { BusquedaController } from './busquedas/busqueda.controller';
@@ -12,7 +14,7 @@ import { UsuarioController } from './usuarios/usuario.controller';
 import { UsuarioService } from './usuarios/usuario.service';
 
 @Module({
-  imports: [],
+  imports: [ConfigModule.forRoot({ isGlobal: true, load: [configuracion] })],
   controllers: [
     AuthController,
     UsuarioController,
