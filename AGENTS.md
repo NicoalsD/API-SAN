@@ -12,7 +12,7 @@ API REST en NestJS para busqueda, consulta y comparacion de ofertas academicas: 
 ## Alcance actual (respetar)
 
 - Arquitectura por capas: Controller (solo HTTP y mapeo request/response), Service (toda la logica), DTOs.
-- Datos en memoria (mock): las ofertas compartidas viven en `src/common/ofertas.mock.ts` (catalogo, busqueda y comparacion las reutilizan); el resto de datos mock, en cada Service. NO implementar todavia: base de datos, ORM (TypeORM/Prisma), repositorios, migraciones, Redis, integracion SNIES/MEN, JWT/BCrypt real. Agregarlos solo si se pide.
+- Datos en memoria (mock): las ofertas compartidas viven en `src/common/ofertas.mock.ts` (catalogo, busqueda y comparacion las reutilizan); el resto de datos mock, en cada Service. PostgreSQL ya esta disponible via docker-compose y configuracion (`baseDatos`), pero NO implementar todavia: ORM (TypeORM/Prisma), repositorios, migraciones, Redis, integracion SNIES/MEN, JWT/BCrypt real. Agregarlos solo si se pide.
 - Nombres de clases, DTOs y rutas en espanol, iguales al diagrama. No renombrar.
 - Simplicidad: seguir el estilo de `IvonneBarco/book-nestjs-5b` (DTOs con class-validator, excepciones de Nest con mensajes en espanol, respuestas `{ message, data }` o `{ msg }`).
 - Excepciones: lanzarlas en los Services con las clases de Nest (`NotFoundException`, `ConflictException`, `BadRequestException`, `UnauthorizedException`) y mensajes en espanol. Los controllers no validan a mano: el `ValidationPipe` global responde 400.
@@ -50,9 +50,19 @@ DTOs clave (nombres exactos del diagrama):
 
 - Instalar: `npm install`
 - Dev: `npm run start:dev` (http://localhost:3000)
+- PostgreSQL (Docker): `docker compose up -d postgres`
 - Build: `npm run build`
 - Lint: `npm run lint` (revisa `src/` y `test/`)
 - Tests: `npm test` (solo `src/**/*.spec.ts`)
 - Un solo test: `npm test -- auth`
 - E2E: `npm run test:e2e`
 - Nota tests: jest corre en modo ESM (`NODE_OPTIONS=--experimental-vm-modules` ya incluido en los scripts) porque Nest 12 (`@nestjs/common`) es ESM puro. No quitar `tsconfig.spec.json` ni el override de transforms en `jest.config.ts` y `test/jest-e2e.json`.
+
+## Docker y PostgreSQL
+
+- Copiar las variables: `cp .env.example .env` (`.env` no se commitea).
+- Solo la base de datos, para correr la API en local con `npm run start:dev`: `docker compose up -d postgres` (expone `localhost:5432` o `DB_PORT`).
+- API y base de datos en contenedores: `docker compose up -d --build` (API en http://localhost:3000 o `PORT`). Dentro del contenedor la API usa `PORT=3000` y `DB_HOST=postgres`, que sobrescriben los valores de `.env`.
+- Las variables de la base ya estan tipadas en `Configuracion.baseDatos` (`src/config/configuracion.ts`); leerlas con `ConfigService`.
+- Los datos siguen siendo mock: PostgreSQL esta levantado pero todavia no hay ORM ni repositorios que lo usen.
+- Detener: `docker compose down`. Agregar `-v` solo si se quiere borrar el volumen `postgres_data`.
