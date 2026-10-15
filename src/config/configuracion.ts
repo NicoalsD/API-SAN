@@ -6,6 +6,7 @@ export interface Configuracion {
     usuario: string;
     contrasena: string;
     nombre: string;
+    sincronizar: boolean;
   };
 }
 
@@ -17,5 +18,6 @@ export default (): Configuracion => ({
     usuario: process.env.POSTGRES_USER ?? 'postgres',
     contrasena: process.env.POSTGRES_PASSWORD ?? 'postgres',
     nombre: process.env.POSTGRES_DB ?? 'api_san',
+    sincronizar: process.env.NODE_ENV !== 'production',
   },
 });

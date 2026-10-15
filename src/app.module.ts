@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { configuracionBaseDatos } from './config/base-datos.config';
 import configuracion from './config/configuracion';
 import { AuthController } from './auth/auth.controller';
 import { AuthService } from './auth/auth.service';
@@ -15,6 +17,10 @@ import { UsuarioModule } from './usuarios/usuario.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, load: [configuracion] }),
+    TypeOrmModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: configuracionBaseDatos,
+    }),
     UsuarioModule,
   ],
   controllers: [
