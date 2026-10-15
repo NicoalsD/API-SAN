@@ -21,7 +21,7 @@ API REST en NestJS para busqueda, consulta y comparacion de ofertas academicas: 
 ## Estructura (capas)
 
 - Una carpeta por recurso en `src/`: `auth/`, `usuarios/`, `busquedas/`, `catalogo/`, `comparacion/`.
-- Archivos por recurso: `<recurso>.controller.ts`, `<recurso>.service.ts`, `<singular>.dto.ts`, `<singular>.module.ts` (todas las clases Dto del recurso en ese unico archivo).
+- Archivos por recurso: `<recurso>.controller.ts`, `<recurso>.service.ts`, `<singular>.dto.ts`, `<singular>.module.ts`, `<singular>.entity.ts` (todas las clases Dto del recurso en ese unico archivo).
 - Modulos de Nest: cada recurso migra a su propio `<singular>.module.ts` (clase `<Singular>Module`, en espanol) que registra su controller y service y exporta el service; `src/app.module.ts` solo lo importa. Todos los recursos tienen modulo: `AuthModule`, `UsuarioModule`, `BusquedaModule`, `CatalogoModule`, `ComparacionModule`; `ComparacionModule` importa `CatalogoModule`.
 - `src/main.ts` usa `ValidationPipe` global y escucha en `process.env.PORT ?? 3000`.
 
@@ -65,7 +65,14 @@ DTOs clave (nombres exactos del diagrama):
 - Solo la base de datos, para correr la API en local con `npm run start:dev`: `docker compose up -d postgres` (expone `localhost:5432` o `POSTGRES_PORT`).
 - API y base de datos en contenedores: `docker compose up -d --build` (API en http://localhost:3000 o `PORT`). Dentro del contenedor la API usa `PORT=3000`, `POSTGRES_HOST=postgres` y `POSTGRES_PORT=5432`, que sobrescriben los valores de `.env`.
 - TypeORM (`@nestjs/typeorm` + `pg`): `TypeOrmModule.forRootAsync` en `src/app.module.ts` con `useFactory` que lee las variables `POSTGRES_*` con `getOrThrow`. `autoLoadEntities: true`: cada modulo registra sus entidades con `TypeOrmModule.forFeature([...])`. `synchronize: true` (crea y actualiza las tablas desde las entidades).
-- Los datos siguen siendo mock hasta que cada recurso migre a entidades y repositorios.
+- Entidades (TypeORM, nombres en espanol, `@PrimaryGeneratedColumn('uuid')`), cada una registrada con `TypeOrmModule.forFeature` en su modulo:
+  - `catalogo/carrera.entity.ts` (`Carrera`, tabla `carreras`) y `catalogo/universidad.entity.ts` (`Universidad`, tabla `universidades`): 1:N con `OfertaAcademica`.
+  - `catalogo/oferta-academica.entity.ts` (`OfertaAcademica`, tabla `ofertas_academicas`): snies unico, ciudad, costo, modalidad, jornada, duracion, acreditacion; N:1 con `Universidad` y `Carrera`.
+  - `usuarios/usuario.entity.ts` (`Usuario`, tabla `usuarios`): nombre, correo unico, clave, preferencias (jsonb), favoritos N:M con `OfertaAcademica` (tabla `usuario_favoritos`).
+  - `busquedas/busqueda.entity.ts` (`Busqueda`, tabla `busquedas`): filtros y resultados (jsonb), N:1 opcional con `Usuario`.
+  - `comparacion/comparacion.entity.ts` (`Comparacion`, tabla `comparaciones`): ofertas N:M (tabla `comparacion_ofertas`), tabla (jsonb), `mejorOferta` N:1.
+- Las propiedades de relacion usan `Relation<...>` de typeorm para evitar errores por imports circulares con `emitDecoratorMetadata`.
+- Los Services siguen con datos mock: las entidades solo crean las tablas; pasar a repositorios (`@InjectRepository`) cuando se pida.
 - La API y `npm run test:e2e` necesitan PostgreSQL arriba (`docker compose up -d postgres`). `npm test` no.
 - pgAdmin: `docker compose up -d pgadmin` y abrir http://localhost:5050 (credenciales `PGADMIN_EMAIL` / `PGADMIN_PASSWORD` del `.env`). El servidor "API SAN" (host `postgres`, puerto 5432) se precarga desde `docker/pgadmin/servers.json` la primera vez que se crea el volumen `pgadmin_data`; la contrasena de la base se pide al conectar.
 - Si el puerto 5432 ya esta ocupado por un PostgreSQL local, cambiar `POSTGRES_PORT` en `.env` (por ejemplo 5433); Nest y Compose leen el mismo valor.
