@@ -1,0 +1,13 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "API SAN",
+      "Group": "Servers",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "api_san",
+      "Username": "postgres",
+      "SSLMode": "prefer"
+    }
+  }
+}
