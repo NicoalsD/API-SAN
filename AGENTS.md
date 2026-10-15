@@ -28,7 +28,7 @@ API REST en NestJS para busqueda, consulta y comparacion de ofertas academicas: 
 ## Configuracion (variables de entorno)
 
 - `@nestjs/config` con `ConfigModule.forRoot({ isGlobal: true, load: [configuracion] })` en `src/app.module.ts`.
-- Interfaz `Configuracion` y loader en `src/config/configuracion.ts`; todo valor tiene default para que la app y los tests corran sin `.env`.
+- Interfaz `Env` en `src/config/env.models.ts` y loader en `src/config/configuracion.ts`; todo valor tiene default para que la app y los tests corran sin `.env`.
 - Copiar `.env.example` a `.env` (`.env` esta en `.gitignore`, nunca commitearlo). Leer valores con `ConfigService` (`configService.get('baseDatos.host')`), no con `process.env` fuera del loader.
 
 | Controller | Endpoints | Service |
@@ -64,7 +64,7 @@ DTOs clave (nombres exactos del diagrama):
 - Copiar las variables: `cp .env.example .env` (`.env` no se commitea).
 - Solo la base de datos, para correr la API en local con `npm run start:dev`: `docker compose up -d postgres` (expone `localhost:5432` o `DB_PORT`).
 - API y base de datos en contenedores: `docker compose up -d --build` (API en http://localhost:3000 o `PORT`). Dentro del contenedor la API usa `PORT=3000` y `DB_HOST=postgres`, que sobrescriben los valores de `.env`.
-- Las variables de la base ya estan tipadas en `Configuracion.baseDatos` (`src/config/configuracion.ts`); leerlas con `ConfigService`.
+- Las variables de la base ya estan tipadas en `Env.baseDatos` (`src/config/env.models.ts`); leerlas con `ConfigService`.
 - TypeORM (`@nestjs/typeorm` + `pg`): `TypeOrmModule.forRootAsync` en `src/app.module.ts` con `configuracionBaseDatos` (`src/config/base-datos.config.ts`), que lee `baseDatos` desde `ConfigService`. `autoLoadEntities: true`: cada modulo registra sus entidades con `TypeOrmModule.forFeature([...])`. `synchronize` solo fuera de produccion (`NODE_ENV !== 'production'`).
 - Los datos siguen siendo mock hasta que cada recurso migre a entidades y repositorios.
 - La API y `npm run test:e2e` necesitan PostgreSQL arriba (`docker compose up -d postgres`). `npm test` no.
