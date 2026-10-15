@@ -8,6 +8,7 @@ API REST en NestJS para busqueda, consulta y comparacion de ofertas academicas: 
 - Rama por defecto: `develop`. No trabajar directo sobre ella; crear `feature/<nombre>` desde `develop`.
 - Remoto: https://github.com/NicoalsD/API-SAN.git
 - Reglas de ramas, commits y plantilla de PR: `.agents/workflow.md`. Todo PR lleva el banner de la cooperativa al inicio del cuerpo y necesita 2 aprobaciones para mergear (ruleset de GitHub).
+- PROHIBIDO cualquier atribucion a IA en commits, PR, reviews o archivos: nunca `Co-Authored-By: Claude`, "Generated with Claude Code", "Made with Claude" ni nada parecido. Commits y PR solo con la convencion y la plantilla de `.agents/workflow.md`.
 
 ## Alcance actual (respetar)
 
