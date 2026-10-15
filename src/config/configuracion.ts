@@ -1,16 +1,6 @@
-export interface Configuracion {
-  puerto: number;
-  baseDatos: {
-    host: string;
-    puerto: number;
-    usuario: string;
-    contrasena: string;
-    nombre: string;
-    sincronizar: boolean;
-  };
-}
+import { Env } from './env.models';
 
-export default (): Configuracion => ({
+export default (): Env => ({
   puerto: parseInt(process.env.PORT ?? '3000', 10),
   baseDatos: {
     host: process.env.DB_HOST ?? 'localhost',

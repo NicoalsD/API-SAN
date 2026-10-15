@@ -1,9 +1,9 @@
 import { ConfigService } from '@nestjs/config';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
-import { Configuracion } from './configuracion';
+import { Env } from './env.models';
 
 export const configuracionBaseDatos = (
-  configService: ConfigService<Configuracion, true>,
+  configService: ConfigService<Env, true>,
 ): TypeOrmModuleOptions => {
   const baseDatos = configService.get('baseDatos', { infer: true });
 
