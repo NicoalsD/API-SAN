@@ -22,7 +22,13 @@ API REST en NestJS para busqueda, consulta y comparacion de ofertas academicas: 
 - Una carpeta por recurso en `src/`: `auth/`, `usuarios/`, `busquedas/`, `catalogo/`, `comparacion/`.
 - Archivos por recurso: `<recurso>.controller.ts`, `<recurso>.service.ts`, `<singular>.dto.ts` (todas las clases Dto del recurso en ese unico archivo).
 - Sin archivo `<recurso>.module.ts`: registrar controllers y providers directo en `src/app.module.ts` (como la profe).
-- `src/main.ts` usa `ValidationPipe` global.
+- `src/main.ts` usa `ValidationPipe` global y lee el puerto con `ConfigService`.
+
+## Configuracion (variables de entorno)
+
+- `@nestjs/config` con `ConfigModule.forRoot({ isGlobal: true, load: [configuracion] })` en `src/app.module.ts`.
+- Interfaz `Configuracion` y loader en `src/config/configuracion.ts`; todo valor tiene default para que la app y los tests corran sin `.env`.
+- Copiar `.env.example` a `.env` (`.env` esta en `.gitignore`, nunca commitearlo). Leer valores con `ConfigService` (`configService.get('baseDatos.host')`), no con `process.env` fuera del loader.
 
 | Controller | Endpoints | Service |
 |---|---|---|
