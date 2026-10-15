@@ -2,15 +2,10 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Env } from './env.model';
-import { AuthController } from './auth/auth.controller';
-import { AuthService } from './auth/auth.service';
-import { BusquedaController } from './busquedas/busqueda.controller';
-import { BusquedaService } from './busquedas/busqueda.service';
-import { ScoringService } from './busquedas/scoring.service';
-import { CatalogoController } from './catalogo/catalogo.controller';
-import { CatalogoService } from './catalogo/catalogo.service';
-import { ComparacionController } from './comparacion/comparacion.controller';
-import { ComparacionService } from './comparacion/comparacion.service';
+import { AuthModule } from './auth/auth.module';
+import { BusquedaModule } from './busquedas/busqueda.module';
+import { CatalogoModule } from './catalogo/catalogo.module';
+import { ComparacionModule } from './comparacion/comparacion.module';
 import { UsuarioModule } from './usuarios/usuario.module';
 
 @Module({
@@ -31,20 +26,11 @@ import { UsuarioModule } from './usuarios/usuario.module';
       }),
       inject: [ConfigService],
     }),
+    AuthModule,
     UsuarioModule,
-  ],
-  controllers: [
-    AuthController,
-    BusquedaController,
-    CatalogoController,
-    ComparacionController,
-  ],
-  providers: [
-    AuthService,
-    BusquedaService,
-    ScoringService,
-    CatalogoService,
-    ComparacionService,
+    BusquedaModule,
+    CatalogoModule,
+    ComparacionModule,
   ],
 })
 export class AppModule {}

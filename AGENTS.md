@@ -22,7 +22,7 @@ API REST en NestJS para busqueda, consulta y comparacion de ofertas academicas: 
 
 - Una carpeta por recurso en `src/`: `auth/`, `usuarios/`, `busquedas/`, `catalogo/`, `comparacion/`.
 - Archivos por recurso: `<recurso>.controller.ts`, `<recurso>.service.ts`, `<singular>.dto.ts`, `<singular>.module.ts` (todas las clases Dto del recurso en ese unico archivo).
-- Modulos de Nest: cada recurso migra a su propio `<singular>.module.ts` (clase `<Singular>Module`, en espanol) que registra su controller y service y exporta el service; `src/app.module.ts` solo lo importa. Ya migrado: `usuarios/usuario.module.ts` (`UsuarioModule`). Los recursos aun no migrados se registran directo en `src/app.module.ts`.
+- Modulos de Nest: cada recurso migra a su propio `<singular>.module.ts` (clase `<Singular>Module`, en espanol) que registra su controller y service y exporta el service; `src/app.module.ts` solo lo importa. Todos los recursos tienen modulo: `AuthModule`, `UsuarioModule`, `BusquedaModule`, `CatalogoModule`, `ComparacionModule`; `ComparacionModule` importa `CatalogoModule`.
 - `src/main.ts` usa `ValidationPipe` global y escucha en `process.env.PORT ?? 3000`.
 
 ## Configuracion (variables de entorno)
