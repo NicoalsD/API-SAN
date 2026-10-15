@@ -66,4 +66,6 @@ DTOs clave (nombres exactos del diagrama):
 - API y base de datos en contenedores: `docker compose up -d --build` (API en http://localhost:3000 o `PORT`). Dentro del contenedor la API usa `PORT=3000` y `DB_HOST=postgres`, que sobrescriben los valores de `.env`.
 - Las variables de la base ya estan tipadas en `Configuracion.baseDatos` (`src/config/configuracion.ts`); leerlas con `ConfigService`.
 - Los datos siguen siendo mock: PostgreSQL esta levantado pero todavia no hay ORM ni repositorios que lo usen.
+- pgAdmin: `docker compose up -d pgadmin` y abrir http://localhost:5050 (credenciales `PGADMIN_EMAIL` / `PGADMIN_PASSWORD` del `.env`). El servidor "API SAN" (host `postgres`, puerto 5432) se precarga desde `docker/pgadmin/servers.json` la primera vez que se crea el volumen `pgadmin_data`; la contrasena de la base se pide al conectar.
+- Si el puerto 5432 ya esta ocupado por un PostgreSQL local, cambiar `DB_PORT` en `.env` (por ejemplo 5433); Nest y Compose leen el mismo valor.
 - Detener: `docker compose down`. Agregar `-v` solo si se quiere borrar el volumen `postgres_data`.
