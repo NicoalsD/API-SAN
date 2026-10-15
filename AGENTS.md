@@ -13,7 +13,7 @@ API REST en NestJS para busqueda, consulta y comparacion de ofertas academicas: 
 ## Alcance actual (respetar)
 
 - Arquitectura por capas: Controller (solo HTTP y mapeo request/response), Service (toda la logica), DTOs.
-- Datos en memoria (mock): las ofertas compartidas viven en `src/common/ofertas.mock.ts` (catalogo, busqueda y comparacion las reutilizan); el resto de datos mock, en cada Service. PostgreSQL esta disponible via docker-compose y TypeORM ya esta conectado (`src/config/base-datos.config.ts`), pero ningun recurso usa entidades todavia. NO implementar todavia: Prisma, migraciones, Redis, integracion SNIES/MEN, JWT/BCrypt real. Agregarlos solo si se pide.
+- Datos en memoria (mock): las ofertas compartidas viven en `src/common/ofertas.mock.ts` (catalogo, busqueda y comparacion las reutilizan); el resto de datos mock, en cada Service. PostgreSQL esta disponible via docker-compose y TypeORM ya esta conectado en `src/app.module.ts`. NO implementar todavia: Prisma, migraciones, Redis, integracion SNIES/MEN, JWT/BCrypt real. Agregarlos solo si se pide.
 - Nombres de clases, DTOs y rutas en espanol, iguales al diagrama. No renombrar.
 - Simplicidad: seguir el estilo de `IvonneBarco/book-nestjs-5b` (DTOs con class-validator, excepciones de Nest con mensajes en espanol, respuestas `{ message, data }` o `{ msg }`).
 - Excepciones: lanzarlas en los Services con las clases de Nest (`NotFoundException`, `ConflictException`, `BadRequestException`, `UnauthorizedException`) y mensajes en espanol. Los controllers no validan a mano: el `ValidationPipe` global responde 400.
@@ -23,13 +23,13 @@ API REST en NestJS para busqueda, consulta y comparacion de ofertas academicas: 
 - Una carpeta por recurso en `src/`: `auth/`, `usuarios/`, `busquedas/`, `catalogo/`, `comparacion/`.
 - Archivos por recurso: `<recurso>.controller.ts`, `<recurso>.service.ts`, `<singular>.dto.ts`, `<singular>.module.ts` (todas las clases Dto del recurso en ese unico archivo).
 - Modulos de Nest: cada recurso migra a su propio `<singular>.module.ts` (clase `<Singular>Module`, en espanol) que registra su controller y service y exporta el service; `src/app.module.ts` solo lo importa. Ya migrado: `usuarios/usuario.module.ts` (`UsuarioModule`). Los recursos aun no migrados se registran directo en `src/app.module.ts`.
-- `src/main.ts` usa `ValidationPipe` global y lee el puerto con `ConfigService`.
+- `src/main.ts` usa `ValidationPipe` global y escucha en `process.env.PORT ?? 3000`.
 
 ## Configuracion (variables de entorno)
 
-- `@nestjs/config` con `ConfigModule.forRoot({ isGlobal: true, load: [configuracion] })` en `src/app.module.ts`.
-- Interfaz `Env` en `src/config/env.models.ts` y loader en `src/config/configuracion.ts`; todo valor tiene default para que la app y los tests corran sin `.env`.
-- Copiar `.env.example` a `.env` (`.env` esta en `.gitignore`, nunca commitearlo). Leer valores con `ConfigService` (`configService.get('baseDatos.host')`), no con `process.env` fuera del loader.
+- Igual que `IvonneBarco/book-nestjs-5a`: `ConfigModule.forRoot({ isGlobal: true })` en `src/app.module.ts`, sin loader.
+- Interfaz `Env` en `src/env.model.ts`: sus claves son los nombres de las variables del `.env` (`PORT`, `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`). Al agregar una variable, sumarla a `Env` y a `.env.example`.
+- Leer valores con `ConfigService<Env>` y `getOrThrow('POSTGRES_HOST')`: si falta la variable la app no arranca, por eso hay que copiar `.env.example` a `.env` (`.env` esta en `.gitignore`, nunca commitearlo).
 
 | Controller | Endpoints | Service |
 |---|---|---|
@@ -62,12 +62,11 @@ DTOs clave (nombres exactos del diagrama):
 ## Docker y PostgreSQL
 
 - Copiar las variables: `cp .env.example .env` (`.env` no se commitea).
-- Solo la base de datos, para correr la API en local con `npm run start:dev`: `docker compose up -d postgres` (expone `localhost:5432` o `DB_PORT`).
-- API y base de datos en contenedores: `docker compose up -d --build` (API en http://localhost:3000 o `PORT`). Dentro del contenedor la API usa `PORT=3000` y `DB_HOST=postgres`, que sobrescriben los valores de `.env`.
-- Las variables de la base ya estan tipadas en `Env.baseDatos` (`src/config/env.models.ts`); leerlas con `ConfigService`.
-- TypeORM (`@nestjs/typeorm` + `pg`): `TypeOrmModule.forRootAsync` en `src/app.module.ts` con `configuracionBaseDatos` (`src/config/base-datos.config.ts`), que lee `baseDatos` desde `ConfigService`. `autoLoadEntities: true`: cada modulo registra sus entidades con `TypeOrmModule.forFeature([...])`. `synchronize` solo fuera de produccion (`NODE_ENV !== 'production'`).
+- Solo la base de datos, para correr la API en local con `npm run start:dev`: `docker compose up -d postgres` (expone `localhost:5432` o `POSTGRES_PORT`).
+- API y base de datos en contenedores: `docker compose up -d --build` (API en http://localhost:3000 o `PORT`). Dentro del contenedor la API usa `PORT=3000`, `POSTGRES_HOST=postgres` y `POSTGRES_PORT=5432`, que sobrescriben los valores de `.env`.
+- TypeORM (`@nestjs/typeorm` + `pg`): `TypeOrmModule.forRootAsync` en `src/app.module.ts` con `useFactory` que lee las variables `POSTGRES_*` con `getOrThrow`. `autoLoadEntities: true`: cada modulo registra sus entidades con `TypeOrmModule.forFeature([...])`. `synchronize: true` (crea y actualiza las tablas desde las entidades).
 - Los datos siguen siendo mock hasta que cada recurso migre a entidades y repositorios.
 - La API y `npm run test:e2e` necesitan PostgreSQL arriba (`docker compose up -d postgres`). `npm test` no.
 - pgAdmin: `docker compose up -d pgadmin` y abrir http://localhost:5050 (credenciales `PGADMIN_EMAIL` / `PGADMIN_PASSWORD` del `.env`). El servidor "API SAN" (host `postgres`, puerto 5432) se precarga desde `docker/pgadmin/servers.json` la primera vez que se crea el volumen `pgadmin_data`; la contrasena de la base se pide al conectar.
-- Si el puerto 5432 ya esta ocupado por un PostgreSQL local, cambiar `DB_PORT` en `.env` (por ejemplo 5433); Nest y Compose leen el mismo valor.
+- Si el puerto 5432 ya esta ocupado por un PostgreSQL local, cambiar `POSTGRES_PORT` en `.env` (por ejemplo 5433); Nest y Compose leen el mismo valor.
 - Detener: `docker compose down`. Agregar `-v` solo si se quiere borrar el volumen `postgres_data`.
