@@ -10,21 +10,21 @@ import { CatalogoController } from './catalogo/catalogo.controller';
 import { CatalogoService } from './catalogo/catalogo.service';
 import { ComparacionController } from './comparacion/comparacion.controller';
 import { ComparacionService } from './comparacion/comparacion.service';
-import { UsuarioController } from './usuarios/usuario.controller';
-import { UsuarioService } from './usuarios/usuario.service';
+import { UsuarioModule } from './usuarios/usuario.module';
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true, load: [configuracion] })],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true, load: [configuracion] }),
+    UsuarioModule,
+  ],
   controllers: [
     AuthController,
-    UsuarioController,
     BusquedaController,
     CatalogoController,
     ComparacionController,
   ],
   providers: [
     AuthService,
-    UsuarioService,
     BusquedaService,
     ScoringService,
     CatalogoService,
