@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseUUIDPipe,
   Post,
   Put,
 } from '@nestjs/common';
@@ -15,32 +16,35 @@ export class UsuarioController {
   constructor(private readonly usuarioService: UsuarioService) {}
 
   @Get(':id/preferencias')
-  obtenerPreferencias(@Param('id') id: string) {
+  obtenerPreferencias(@Param('id', ParseUUIDPipe) id: string) {
     return this.usuarioService.obtenerPreferencias(id);
   }
 
   @Put(':id/preferencias')
   actualizarPreferencias(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() datos: PreferenciaDto,
   ) {
     return this.usuarioService.actualizarPreferencias(id, datos);
   }
 
   @Get(':id/favoritos')
-  listarFavoritos(@Param('id') id: string) {
+  listarFavoritos(@Param('id', ParseUUIDPipe) id: string) {
     return this.usuarioService.listarFavoritos(id);
   }
 
   @Post(':id/favoritos')
-  agregarFavorito(@Param('id') id: string, @Body() datos: FavoritoDto) {
+  agregarFavorito(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() datos: FavoritoDto,
+  ) {
     return this.usuarioService.agregarFavorito(id, datos);
   }
 
   @Delete(':id/favoritos/:ofertaId')
   eliminarFavorito(
-    @Param('id') id: string,
-    @Param('ofertaId') ofertaId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('ofertaId', ParseUUIDPipe) ofertaId: string,
   ) {
     return this.usuarioService.eliminarFavorito(id, ofertaId);
   }

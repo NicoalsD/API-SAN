@@ -3,41 +3,32 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { isUUID } from 'class-validator';
+import { Repository } from 'typeorm';
+import { Usuario } from '../usuarios/usuario.entity';
 import { AuthResponseDto, LoginDto, RegistroDto } from './auth.dto';
-
-interface Usuario {
-  id: string;
-  nombre: string;
-  correo: string;
-  clave: string;
-}
 
 @Injectable()
 export class AuthService {
-  private usuarios: Usuario[] = [
-    {
-      id: '1',
-      nombre: 'Nicolas',
-      correo: 'nicolas@correo.com',
-      clave: '123456',
-    },
-  ];
+  constructor(
+    @InjectRepository(Usuario)
+    private readonly usuarioRepository: Repository<Usuario>,
+  ) {}
 
-  registrar(datos: RegistroDto) {
-    const existente = this.usuarios.find(
-      (usuario) => usuario.correo === datos.correo,
-    );
-    if (existente !== undefined) {
+  async registrar(datos: RegistroDto) {
+    const existente = await this.usuarioRepository.findOneBy({
+      correo: datos.correo,
+    });
+    if (existente !== null) {
       throw new ConflictException(
         `El correo ${datos.correo} ya esta registrado`,
       );
     }
 
-    const nuevoUsuario: Usuario = {
-      id: `${new Date().getTime()}`,
-      ...datos,
-    };
-    this.usuarios.push(nuevoUsuario);
+    const nuevoUsuario = await this.usuarioRepository.save(
+      this.usuarioRepository.create(datos),
+    );
 
     return {
       message: 'Usuario registrado correctamente',
@@ -45,11 +36,11 @@ export class AuthService {
     };
   }
 
-  login(datos: LoginDto) {
-    const usuario = this.usuarios.find(
-      (usuario) => usuario.correo === datos.correo,
-    );
-    if (usuario === undefined || usuario.clave !== datos.clave) {
+  async login(datos: LoginDto) {
+    const usuario = await this.usuarioRepository.findOneBy({
+      correo: datos.correo,
+    });
+    if (usuario === null || usuario.clave !== datos.clave) {
       throw new UnauthorizedException('Correo o clave incorrectos');
     }
 
@@ -59,10 +50,14 @@ export class AuthService {
     };
   }
 
-  refresh(refreshToken: string) {
+  async refresh(refreshToken: string) {
     const id = refreshToken.replace('refresh-', '');
-    const usuario = this.usuarios.find((usuario) => usuario.id === id);
-    if (usuario === undefined) {
+    if (!isUUID(id)) {
+      throw new UnauthorizedException('Refresh token invalido');
+    }
+
+    const usuario = await this.usuarioRepository.findOneBy({ id });
+    if (usuario === null) {
       throw new UnauthorizedException('Refresh token invalido');
     }
 

@@ -1,4 +1,4 @@
-import { IsInt, IsNotEmpty, IsString, Max, Min } from 'class-validator';
+import { IsInt, IsNotEmpty, IsUUID, Max, Min } from 'class-validator';
 
 export class PreferenciaDto {
   @IsInt()
@@ -23,7 +23,7 @@ export class PreferenciaDto {
 }
 
 export class FavoritoDto {
-  @IsString()
+  @IsUUID()
   @IsNotEmpty()
   ofertaId: string;
 }

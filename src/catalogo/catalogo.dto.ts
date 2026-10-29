@@ -8,3 +8,16 @@ export class UniversidadDto {
   nombre: string;
   ciudad: string;
 }
+
+export class OfertaAcademicaDto {
+  id: string;
+  universidad: string;
+  carrera: string;
+  ciudad: string;
+  costo: number;
+  modalidad: string;
+  jornada: string;
+  duracion: number;
+  acreditacion: boolean;
+  snies: string;
+}

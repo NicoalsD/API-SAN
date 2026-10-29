@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { OfertaAcademica } from '../common/ofertas.mock';
+import { OfertaAcademicaDto } from '../catalogo/catalogo.dto';
 import { PreferenciaDto } from '../usuarios/usuario.dto';
 import { BusquedaRequestDto, DesgloseDto } from './busqueda.dto';
 
@@ -13,7 +13,7 @@ const PESOS_POR_DEFECTO: PreferenciaDto = {
 @Injectable()
 export class ScoringService {
   calcular(
-    oferta: OfertaAcademica,
+    oferta: OfertaAcademicaDto,
     filtros: BusquedaRequestDto,
   ): { puntaje: number; desglose: DesgloseDto } {
     const pesos = filtros.pesos ?? PESOS_POR_DEFECTO;
@@ -40,7 +40,7 @@ export class ScoringService {
     };
   }
 
-  private puntajeCosto(oferta: OfertaAcademica, costoMax?: number) {
+  private puntajeCosto(oferta: OfertaAcademicaDto, costoMax?: number) {
     if (costoMax === undefined) {
       return 1;
     }

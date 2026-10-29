@@ -1,4 +1,4 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, ParseUUIDPipe } from '@nestjs/common';
 import { CatalogoService } from './catalogo.service';
 
 @Controller()
@@ -11,7 +11,7 @@ export class CatalogoController {
   }
 
   @Get('carreras/:id')
-  obtenerCarrera(@Param('id') id: string) {
+  obtenerCarrera(@Param('id', ParseUUIDPipe) id: string) {
     return this.catalogoService.obtenerCarrera(id);
   }
 
@@ -21,12 +21,12 @@ export class CatalogoController {
   }
 
   @Get('universidades/:id')
-  obtenerUniversidad(@Param('id') id: string) {
+  obtenerUniversidad(@Param('id', ParseUUIDPipe) id: string) {
     return this.catalogoService.obtenerUniversidad(id);
   }
 
   @Get('ofertas/:id')
-  obtenerOferta(@Param('id') id: string) {
+  obtenerOferta(@Param('id', ParseUUIDPipe) id: string) {
     return this.catalogoService.obtenerOferta(id);
   }
 }

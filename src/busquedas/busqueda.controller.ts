@@ -1,4 +1,11 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Post,
+} from '@nestjs/common';
 import { BusquedaRequestDto } from './busqueda.dto';
 import { BusquedaService } from './busqueda.service';
 
@@ -12,12 +19,12 @@ export class BusquedaController {
   }
 
   @Get(':id')
-  obtener(@Param('id') id: string) {
+  obtener(@Param('id', ParseUUIDPipe) id: string) {
     return this.busquedaService.obtener(id);
   }
 
   @Get(':id/resultados')
-  obtenerResultados(@Param('id') id: string) {
+  obtenerResultados(@Param('id', ParseUUIDPipe) id: string) {
     return this.busquedaService.obtenerResultados(id);
   }
 }
