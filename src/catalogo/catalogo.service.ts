@@ -1,57 +1,104 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { OFERTAS, OfertaAcademica } from '../common/ofertas.mock';
-import { CarreraDto, UniversidadDto } from './catalogo.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { In, Repository } from 'typeorm';
+import { CarreraDto, OfertaAcademicaDto, UniversidadDto } from './catalogo.dto';
+import { Carrera } from './carrera.entity';
+import { OfertaAcademica } from './oferta-academica.entity';
+import { Universidad } from './universidad.entity';
 
 @Injectable()
 export class CatalogoService {
-  private carreras: CarreraDto[] = [
-    { id: '1', nombre: 'Ingenieria de Sistemas' },
-    { id: '2', nombre: 'Derecho' },
-    { id: '3', nombre: 'Medicina' },
-  ];
+  constructor(
+    @InjectRepository(Carrera)
+    private readonly carreraRepository: Repository<Carrera>,
+    @InjectRepository(Universidad)
+    private readonly universidadRepository: Repository<Universidad>,
+    @InjectRepository(OfertaAcademica)
+    private readonly ofertaRepository: Repository<OfertaAcademica>,
+  ) {}
 
-  private universidades: UniversidadDto[] = [
-    { id: '1', nombre: 'Universidad Nacional de Colombia', ciudad: 'Bogota' },
-    { id: '2', nombre: 'Universidad de los Andes', ciudad: 'Bogota' },
-    { id: '3', nombre: 'Universidad Javeriana', ciudad: 'Bogota' },
-    { id: '4', nombre: 'Universidad de Antioquia', ciudad: 'Medellin' },
-    { id: '5', nombre: 'Universidad EAFIT', ciudad: 'Medellin' },
-  ];
-
-  listarCarreras() {
-    return this.carreras;
+  async listarCarreras(): Promise<CarreraDto[]> {
+    return this.carreraRepository.find({ order: { nombre: 'ASC' } });
   }
 
-  obtenerCarrera(id: string) {
-    const carrera = this.carreras.find((carrera) => carrera.id === id);
-    if (carrera === undefined) {
+  async obtenerCarrera(id: string) {
+    const carrera = await this.carreraRepository.findOneBy({ id });
+    if (carrera === null) {
       throw new NotFoundException(`Carrera con ID ${id} no existe`);
     }
 
     return carrera;
   }
 
-  listarUniversidades() {
-    return this.universidades;
+  async listarUniversidades(): Promise<UniversidadDto[]> {
+    return this.universidadRepository.find({ order: { nombre: 'ASC' } });
   }
 
-  obtenerUniversidad(id: string) {
-    const universidad = this.universidades.find(
-      (universidad) => universidad.id === id,
-    );
-    if (universidad === undefined) {
+  async obtenerUniversidad(id: string) {
+    const universidad = await this.universidadRepository.findOneBy({ id });
+    if (universidad === null) {
       throw new NotFoundException(`Universidad con ID ${id} no existe`);
     }
 
     return universidad;
   }
 
-  obtenerOferta(id: string): OfertaAcademica {
-    const oferta = OFERTAS.find((oferta) => oferta.id === id);
-    if (oferta === undefined) {
+  async listarOfertas(): Promise<OfertaAcademicaDto[]> {
+    const ofertas = await this.ofertaRepository.find({
+      relations: { universidad: true, carrera: true },
+      order: { snies: 'ASC' },
+    });
+
+    return ofertas.map((oferta) => this.aDto(oferta));
+  }
+
+  async obtenerOferta(id: string): Promise<OfertaAcademicaDto> {
+    const oferta = await this.buscarOferta(id);
+
+    return this.aDto(oferta);
+  }
+
+  async obtenerOfertas(ids: string[]): Promise<OfertaAcademica[]> {
+    const ofertas = await this.ofertaRepository.find({
+      where: { id: In(ids) },
+      relations: { universidad: true, carrera: true },
+    });
+    const porId = new Map(ofertas.map((oferta) => [oferta.id, oferta]));
+
+    return ids.map((id) => {
+      const oferta = porId.get(id);
+      if (oferta === undefined) {
+        throw new NotFoundException(`Oferta con ID ${id} no existe`);
+      }
+
+      return oferta;
+    });
+  }
+
+  private async buscarOferta(id: string) {
+    const oferta = await this.ofertaRepository.findOne({
+      where: { id },
+      relations: { universidad: true, carrera: true },
+    });
+    if (oferta === null) {
       throw new NotFoundException(`Oferta con ID ${id} no existe`);
     }
 
     return oferta;
+  }
+
+  private aDto(oferta: OfertaAcademica): OfertaAcademicaDto {
+    return {
+      id: oferta.id,
+      universidad: oferta.universidad.nombre,
+      carrera: oferta.carrera.nombre,
+      ciudad: oferta.ciudad,
+      costo: oferta.costo,
+      modalidad: oferta.modalidad,
+      jornada: oferta.jornada,
+      duracion: oferta.duracion,
+      acreditacion: oferta.acreditacion,
+      snies: oferta.snies,
+    };
   }
 }

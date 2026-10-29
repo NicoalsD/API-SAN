@@ -8,7 +8,7 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
-import { OfertaAcademica } from '../common/ofertas.mock';
+import { OfertaAcademicaDto } from '../catalogo/catalogo.dto';
 import { PreferenciaDto } from '../usuarios/usuario.dto';
 
 export class BusquedaRequestDto {
@@ -47,7 +47,7 @@ export class DesgloseDto {
 }
 
 export class ResultadoBusquedaDto {
-  oferta: OfertaAcademica;
+  oferta: OfertaAcademicaDto;
   puntaje: number;
   desglose: DesgloseDto;
 }

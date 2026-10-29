@@ -13,7 +13,8 @@ API REST en NestJS para busqueda, consulta y comparacion de ofertas academicas: 
 ## Alcance actual (respetar)
 
 - Arquitectura por capas: Controller (solo HTTP y mapeo request/response), Service (toda la logica), DTOs.
-- Datos en memoria (mock): las ofertas compartidas viven en `src/common/ofertas.mock.ts` (catalogo, busqueda y comparacion las reutilizan); el resto de datos mock, en cada Service. PostgreSQL esta disponible via docker-compose y TypeORM ya esta conectado en `src/app.module.ts`. NO implementar todavia: Prisma, migraciones, Redis, integracion SNIES/MEN, JWT/BCrypt real. Agregarlos solo si se pide.
+- Datos persistidos en PostgreSQL con TypeORM: cada Service usa su repositorio (`@InjectRepository`) y los IDs son UUID generados por la base de datos. El catalogo inicial se carga con `npm run seed` (`src/common/semilla.ts`).
+- NO implementar todavia: Prisma, migraciones, Redis, integracion SNIES/MEN, JWT/BCrypt real. Agregarlos solo si se pide.
 - Nombres de clases, DTOs y rutas en espanol, iguales al diagrama. No renombrar.
 - Simplicidad: seguir el estilo de `IvonneBarco/book-nestjs-5b` (DTOs con class-validator, excepciones de Nest con mensajes en espanol, respuestas `{ message, data }` o `{ msg }`).
 - Excepciones: lanzarlas en los Services con las clases de Nest (`NotFoundException`, `ConflictException`, `BadRequestException`, `UnauthorizedException`) y mensajes en espanol. Los controllers no validan a mano: el `ValidationPipe` global responde 400.
@@ -50,6 +51,7 @@ DTOs clave (nombres exactos del diagrama):
 ## Comandos
 
 - Instalar: `npm install`
+- Cargar catalogo inicial: `npm run seed` (con PostgreSQL arriba y `.env` configurado)
 - Dev: `npm run start:dev` (http://localhost:3000)
 - PostgreSQL (Docker): `docker compose up -d postgres`
 - Build: `npm run build`
@@ -72,8 +74,8 @@ DTOs clave (nombres exactos del diagrama):
   - `busquedas/busqueda.entity.ts` (`Busqueda`, tabla `busquedas`): filtros y resultados (jsonb), N:1 opcional con `Usuario`.
   - `comparacion/comparacion.entity.ts` (`Comparacion`, tabla `comparaciones`): ofertas N:M (tabla `comparacion_ofertas`), tabla (jsonb), `mejorOferta` N:1.
 - Las propiedades de relacion usan `Relation<...>` de typeorm para evitar errores por imports circulares con `emitDecoratorMetadata`.
-- Los Services siguen con datos mock: las entidades solo crean las tablas; pasar a repositorios (`@InjectRepository`) cuando se pida.
-- La API y `npm run test:e2e` necesitan PostgreSQL arriba (`docker compose up -d postgres`). `npm test` no.
+- Los Services usan repositorios (`@InjectRepository`), no arreglos en memoria. `src/common/semilla.ts` carga carreras, universidades, ofertas y el usuario demo de forma idempotente; se ejecuta con `npm run seed` y en las pruebas e2e.
+- La API y `npm run test:e2e` necesitan PostgreSQL arriba (`docker compose up -d postgres`). `npm test` no: usa repositorios simulados.
 - pgAdmin: `docker compose up -d pgadmin` y abrir http://localhost:5050 (credenciales `PGADMIN_EMAIL` / `PGADMIN_PASSWORD` del `.env`). El servidor "API SAN" (host `postgres`, puerto 5432) se precarga desde `docker/pgadmin/servers.json` la primera vez que se crea el volumen `pgadmin_data`; la contrasena de la base se pide al conectar.
 - Si el puerto 5432 ya esta ocupado por un PostgreSQL local, cambiar `POSTGRES_PORT` en `.env` (por ejemplo 5433); Nest y Compose leen el mismo valor.
 - Detener: `docker compose down`. Agregar `-v` solo si se quiere borrar el volumen `postgres_data`.

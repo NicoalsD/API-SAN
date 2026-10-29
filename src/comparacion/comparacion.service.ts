@@ -3,7 +3,10 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { CatalogoService } from '../catalogo/catalogo.service';
+import { Comparacion } from './comparacion.entity';
 import {
   ComparacionDto,
   ComparacionRequestDto,
@@ -12,20 +15,20 @@ import {
 
 @Injectable()
 export class ComparacionService {
-  private comparaciones: ComparacionDto[] = [];
+  constructor(
+    @InjectRepository(Comparacion)
+    private readonly comparacionRepository: Repository<Comparacion>,
+    private readonly catalogoService: CatalogoService,
+  ) {}
 
-  constructor(private readonly catalogoService: CatalogoService) {}
-
-  crear(datos: ComparacionRequestDto) {
+  async crear(datos: ComparacionRequestDto) {
     if (new Set(datos.ofertaIds).size !== datos.ofertaIds.length) {
       throw new BadRequestException(
         'No se pueden repetir ofertas en la comparacion',
       );
     }
 
-    const ofertas = datos.ofertaIds.map((id) =>
-      this.catalogoService.obtenerOferta(id),
-    );
+    const ofertas = await this.catalogoService.obtenerOfertas(datos.ofertaIds);
     const maxCostoTotal = Math.max(
       ...ofertas.map((oferta) => oferta.costo * oferta.duracion),
     );
@@ -36,7 +39,7 @@ export class ComparacionService {
 
         return {
           ofertaId: oferta.id,
-          universidad: oferta.universidad,
+          universidad: oferta.universidad.nombre,
           costoTotal,
           duracion: oferta.duracion,
           modalidad: oferta.modalidad,
@@ -48,45 +51,52 @@ export class ComparacionService {
       })
       .sort((a, b) => b.puntaje - a.puntaje);
 
-    const comparacion: ComparacionDto = {
-      id: `${new Date().getTime()}`,
-      tabla,
-      mejorOfertaId: tabla[0].ofertaId,
-    };
-    this.comparaciones.push(comparacion);
+    const mejorOferta =
+      ofertas.find((oferta) => oferta.id === tabla[0].ofertaId) ?? ofertas[0];
+    const comparacion = await this.comparacionRepository.save(
+      this.comparacionRepository.create({
+        ofertas,
+        tabla,
+        mejorOferta,
+      }),
+    );
 
     return {
       message: 'Comparacion creada correctamente',
-      data: comparacion,
+      data: this.aDto(comparacion),
     };
   }
 
-  obtener(id: string) {
-    return this.buscarComparacion(id);
+  async obtener(id: string): Promise<ComparacionDto> {
+    return this.aDto(await this.buscarComparacion(id));
   }
 
-  eliminar(id: string) {
-    const posicion = this.comparaciones.findIndex(
-      (comparacion) => comparacion.id === id,
-    );
-    if (posicion === -1) {
-      throw new NotFoundException(`Comparacion con ID ${id} no existe`);
-    }
-    this.comparaciones.splice(posicion, 1);
+  async eliminar(id: string) {
+    const comparacion = await this.buscarComparacion(id);
+    await this.comparacionRepository.remove(comparacion);
 
     return {
       message: 'Comparacion eliminada correctamente',
     };
   }
 
-  private buscarComparacion(id: string) {
-    const comparacion = this.comparaciones.find(
-      (comparacion) => comparacion.id === id,
-    );
-    if (comparacion === undefined) {
+  private async buscarComparacion(id: string) {
+    const comparacion = await this.comparacionRepository.findOne({
+      where: { id },
+      relations: { mejorOferta: true },
+    });
+    if (comparacion === null) {
       throw new NotFoundException(`Comparacion con ID ${id} no existe`);
     }
 
     return comparacion;
+  }
+
+  private aDto(comparacion: Comparacion): ComparacionDto {
+    return {
+      id: comparacion.id,
+      tabla: comparacion.tabla,
+      mejorOfertaId: comparacion.mejorOferta?.id ?? '',
+    };
   }
 }

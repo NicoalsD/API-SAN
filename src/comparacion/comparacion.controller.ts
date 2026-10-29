@@ -1,4 +1,12 @@
-import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Post,
+} from '@nestjs/common';
 import { ComparacionRequestDto } from './comparacion.dto';
 import { ComparacionService } from './comparacion.service';
 
@@ -12,12 +20,12 @@ export class ComparacionController {
   }
 
   @Get(':id')
-  obtener(@Param('id') id: string) {
+  obtener(@Param('id', ParseUUIDPipe) id: string) {
     return this.comparacionService.obtener(id);
   }
 
   @Delete(':id')
-  eliminar(@Param('id') id: string) {
+  eliminar(@Param('id', ParseUUIDPipe) id: string) {
     return this.comparacionService.eliminar(id);
   }
 }

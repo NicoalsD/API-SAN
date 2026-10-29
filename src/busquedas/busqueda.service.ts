@@ -1,60 +1,64 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { OFERTAS } from '../common/ofertas.mock';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { CatalogoService } from '../catalogo/catalogo.service';
+import { OfertaAcademicaDto } from '../catalogo/catalogo.dto';
+import { Busqueda } from './busqueda.entity';
 import { BusquedaRequestDto, ResultadoBusquedaDto } from './busqueda.dto';
 import { ScoringService } from './scoring.service';
 
-interface Busqueda {
-  id: string;
-  filtros: BusquedaRequestDto;
-  resultados: ResultadoBusquedaDto[];
-  fecha: string;
-}
-
 @Injectable()
 export class BusquedaService {
-  private busquedas: Busqueda[] = [];
+  constructor(
+    @InjectRepository(Busqueda)
+    private readonly busquedaRepository: Repository<Busqueda>,
+    private readonly catalogoService: CatalogoService,
+    private readonly scoringService: ScoringService,
+  ) {}
 
-  constructor(private readonly scoringService: ScoringService) {}
-
-  crear(datos: BusquedaRequestDto) {
-    const resultados = this.filtrar(datos)
+  async crear(datos: BusquedaRequestDto) {
+    const ofertas = await this.catalogoService.listarOfertas();
+    const resultados: ResultadoBusquedaDto[] = this.filtrar(ofertas, datos)
       .map((oferta) => ({
         oferta,
         ...this.scoringService.calcular(oferta, datos),
       }))
       .sort((a, b) => b.puntaje - a.puntaje);
 
-    const busqueda: Busqueda = {
-      id: `${new Date().getTime()}`,
-      filtros: datos,
-      resultados,
-      fecha: new Date().toISOString(),
-    };
-    this.busquedas.push(busqueda);
+    const busqueda = await this.busquedaRepository.save(
+      this.busquedaRepository.create({
+        filtros: datos,
+        resultados,
+      }),
+    );
 
     return {
       message: 'Busqueda realizada correctamente',
-      data: { id: busqueda.id, total: resultados.length, resultados },
+      data: {
+        id: busqueda.id,
+        total: resultados.length,
+        resultados: busqueda.resultados,
+      },
     };
   }
 
-  obtener(id: string) {
-    const busqueda = this.buscarBusqueda(id);
+  async obtener(id: string) {
+    const busqueda = await this.buscarBusqueda(id);
 
     return {
       id: busqueda.id,
       filtros: busqueda.filtros,
       total: busqueda.resultados.length,
-      fecha: busqueda.fecha,
+      fecha: busqueda.fecha.toISOString(),
     };
   }
 
-  obtenerResultados(id: string) {
-    return this.buscarBusqueda(id).resultados;
+  async obtenerResultados(id: string) {
+    return (await this.buscarBusqueda(id)).resultados;
   }
 
-  private filtrar(filtros: BusquedaRequestDto) {
-    return OFERTAS.filter((oferta) => {
+  private filtrar(ofertas: OfertaAcademicaDto[], filtros: BusquedaRequestDto) {
+    return ofertas.filter((oferta) => {
       if (oferta.carrera.toLowerCase() !== filtros.carrera.toLowerCase()) {
         return false;
       }
@@ -78,9 +82,9 @@ export class BusquedaService {
     });
   }
 
-  private buscarBusqueda(id: string) {
-    const busqueda = this.busquedas.find((busqueda) => busqueda.id === id);
-    if (busqueda === undefined) {
+  private async buscarBusqueda(id: string) {
+    const busqueda = await this.busquedaRepository.findOneBy({ id });
+    if (busqueda === null) {
       throw new NotFoundException(`Busqueda con ID ${id} no existe`);
     }
 

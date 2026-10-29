@@ -1,31 +1,31 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { OfertaAcademica } from '../catalogo/oferta-academica.entity';
 import { FavoritoDto, PreferenciaDto } from './usuario.dto';
-
-interface Usuario {
-  id: string;
-  nombre: string;
-  preferencias: PreferenciaDto;
-  favoritos: string[];
-}
+import { Usuario } from './usuario.entity';
 
 @Injectable()
 export class UsuarioService {
-  private usuarios: Usuario[] = [
-    {
-      id: '1',
-      nombre: 'Nicolas',
-      preferencias: { costo: 3, modalidad: 3, ubicacion: 3, acreditacion: 3 },
-      favoritos: [],
-    },
-  ];
+  constructor(
+    @InjectRepository(Usuario)
+    private readonly usuarioRepository: Repository<Usuario>,
+    @InjectRepository(OfertaAcademica)
+    private readonly ofertaRepository: Repository<OfertaAcademica>,
+  ) {}
 
-  obtenerPreferencias(id: string) {
-    return this.buscarUsuario(id).preferencias;
+  async obtenerPreferencias(id: string) {
+    return (await this.buscarUsuario(id)).preferencias;
   }
 
-  actualizarPreferencias(id: string, preferencias: PreferenciaDto) {
-    const usuario = this.buscarUsuario(id);
+  async actualizarPreferencias(id: string, preferencias: PreferenciaDto) {
+    const usuario = await this.buscarUsuario(id);
     usuario.preferencias = preferencias;
+    await this.usuarioRepository.save(usuario);
 
     return {
       message: 'Preferencias actualizadas',
@@ -33,48 +33,64 @@ export class UsuarioService {
     };
   }
 
-  listarFavoritos(id: string) {
-    return this.buscarUsuario(id).favoritos;
+  async listarFavoritos(id: string) {
+    return this.idsFavoritos(await this.buscarUsuario(id));
   }
 
-  agregarFavorito(id: string, datos: FavoritoDto) {
-    const usuario = this.buscarUsuario(id);
-    if (usuario.favoritos.includes(datos.ofertaId)) {
+  async agregarFavorito(id: string, datos: FavoritoDto) {
+    const usuario = await this.buscarUsuario(id);
+    if (usuario.favoritos.some((oferta) => oferta.id === datos.ofertaId)) {
       throw new ConflictException(
         `La oferta ${datos.ofertaId} ya esta en favoritos`,
       );
     }
-    usuario.favoritos.push(datos.ofertaId);
+
+    const oferta = await this.ofertaRepository.findOneBy({
+      id: datos.ofertaId,
+    });
+    if (oferta === null) {
+      throw new NotFoundException(`Oferta con ID ${datos.ofertaId} no existe`);
+    }
+
+    usuario.favoritos.push(oferta);
+    await this.usuarioRepository.save(usuario);
 
     return {
       message: 'Favorito agregado',
-      data: usuario.favoritos,
+      data: this.idsFavoritos(usuario),
     };
   }
 
-  eliminarFavorito(id: string, ofertaId: string) {
-    const usuario = this.buscarUsuario(id);
-    if (!usuario.favoritos.includes(ofertaId)) {
-      throw new NotFoundException(
-        `La oferta ${ofertaId} no esta en favoritos`,
-      );
+  async eliminarFavorito(id: string, ofertaId: string) {
+    const usuario = await this.buscarUsuario(id);
+    if (!usuario.favoritos.some((oferta) => oferta.id === ofertaId)) {
+      throw new NotFoundException(`La oferta ${ofertaId} no esta en favoritos`);
     }
+
     usuario.favoritos = usuario.favoritos.filter(
-      (favorito) => favorito !== ofertaId,
+      (oferta) => oferta.id !== ofertaId,
     );
+    await this.usuarioRepository.save(usuario);
 
     return {
       message: 'Favorito eliminado',
-      data: usuario.favoritos,
+      data: this.idsFavoritos(usuario),
     };
   }
 
-  private buscarUsuario(id: string) {
-    const usuario = this.usuarios.find((usuario) => usuario.id === id);
-    if (usuario === undefined) {
+  private async buscarUsuario(id: string) {
+    const usuario = await this.usuarioRepository.findOne({
+      where: { id },
+      relations: { favoritos: true },
+    });
+    if (usuario === null) {
       throw new NotFoundException(`Usuario con ID ${id} no existe`);
     }
 
     return usuario;
+  }
+
+  private idsFavoritos(usuario: Usuario) {
+    return usuario.favoritos.map((oferta) => oferta.id);
   }
 }
