@@ -80,6 +80,7 @@ describe('BusquedaService', () => {
     create: jest.Mock;
     save: jest.Mock;
   };
+  let scoringService: ScoringService;
   let usuarioRepository: { findOneBy: jest.Mock };
   let catalogoService: {
     listarOfertas: jest.Mock;
@@ -120,6 +121,7 @@ describe('BusquedaService', () => {
     }).compile();
 
     service = module.get<BusquedaService>(BusquedaService);
+    scoringService = module.get<ScoringService>(ScoringService);
   });
 
   it('filtra por carrera y ordena por puntaje', async () => {
@@ -133,6 +135,30 @@ describe('BusquedaService', () => {
     expect(resultados[0].puntaje).toBeGreaterThanOrEqual(
       resultados[resultados.length - 1].puntaje,
     );
+  });
+
+  it('desempata por menor costo y luego por nombre de universidad', async () => {
+    const base = OFERTAS[0];
+    const ofertas: OfertaAcademicaDto[] = [
+      { ...base, id: 'a', universidad: 'Zeta', costo: 5000000 },
+      { ...base, id: 'b', universidad: 'Beta', costo: 9000000 },
+      { ...base, id: 'c', universidad: 'Alfa', costo: 5000000 },
+      { ...base, id: 'd', universidad: 'Mayor', costo: 1000000 },
+    ];
+    catalogoService.listarOfertas.mockResolvedValue(ofertas);
+    jest.spyOn(scoringService, 'calcular').mockImplementation((oferta) => ({
+      puntaje: oferta.id === 'd' ? 50 : 80,
+      desglose: { costo: 0, modalidad: 0, ubicacion: 0, acreditacion: 0 },
+    }));
+
+    const resultado = await service.crear({ carrera: base.carrera });
+
+    expect(resultado.data.resultados.map((r) => r.oferta.universidad)).toEqual([
+      'Alfa',
+      'Zeta',
+      'Beta',
+      'Mayor',
+    ]);
   });
 
   it('asocia la busqueda al usuario sin guardar usuarioId en filtros', async () => {
