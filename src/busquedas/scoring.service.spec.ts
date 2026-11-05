@@ -101,4 +101,15 @@ describe('ScoringService (casos base)', () => {
     expect(resultado.desglose.modalidad).toBe(0);
     expect(resultado.desglose.ubicacion).toBe(0);
   });
+
+  it('da ubicacion 1 aunque la ciudad llegue con otras mayusculas', () => {
+    const filtros: BusquedaRequestDto = {
+      carrera: 'Ingenieria de Sistemas',
+      ciudad: 'BOGOTA',
+    };
+
+    const resultado = service.calcular(crearOferta(), filtros);
+
+    expect(resultado.desglose.ubicacion).toBe(1);
+  });
 });
