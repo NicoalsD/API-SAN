@@ -1,8 +1,16 @@
-import { ArrayMinSize, IsArray, IsUUID } from 'class-validator';
+import {
+  ArrayMaxSize,
+  ArrayMinSize,
+  ArrayUnique,
+  IsArray,
+  IsUUID,
+} from 'class-validator';
 
 export class ComparacionRequestDto {
   @IsArray()
   @ArrayMinSize(2)
+  @ArrayMaxSize(4)
+  @ArrayUnique()
   @IsUUID('4', { each: true })
   ofertaIds: string[];
 }
