@@ -5,6 +5,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsUUID,
   Min,
   ValidateNested,
 } from 'class-validator';
@@ -37,6 +38,10 @@ export class BusquedaRequestDto {
   @ValidateNested()
   @Type(() => PreferenciaDto)
   pesos?: PreferenciaDto;
+
+  @IsOptional()
+  @IsUUID()
+  usuarioId?: string;
 }
 
 export class DesgloseDto {

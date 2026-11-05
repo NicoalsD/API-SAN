@@ -5,9 +5,10 @@ import { BusquedaController } from './busqueda.controller';
 import { BusquedaService } from './busqueda.service';
 import { ScoringService } from './scoring.service';
 import { Busqueda } from './busqueda.entity';
+import { Usuario } from '../usuarios/usuario.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Busqueda]), CatalogoModule],
+  imports: [TypeOrmModule.forFeature([Busqueda, Usuario]), CatalogoModule],
   controllers: [BusquedaController],
   providers: [BusquedaService, ScoringService],
   exports: [BusquedaService],
