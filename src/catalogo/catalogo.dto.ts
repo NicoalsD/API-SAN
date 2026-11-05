@@ -37,3 +37,7 @@ export class OfertaAcademicaDto {
   acreditacion: boolean;
   snies: string;
 }
+
+export class UniversidadDetalleDto extends UniversidadDto {
+  ofertas: OfertaAcademicaDto[];
+}
