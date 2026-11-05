@@ -74,7 +74,7 @@ DTOs clave (nombres exactos del diagrama):
   - `busquedas/busqueda.entity.ts` (`Busqueda`, tabla `busquedas`): filtros y resultados (jsonb), N:1 opcional con `Usuario`.
   - `comparacion/comparacion.entity.ts` (`Comparacion`, tabla `comparaciones`): ofertas N:M (tabla `comparacion_ofertas`), tabla (jsonb), `mejorOferta` N:1.
 - Las propiedades de relacion usan `Relation<...>` de typeorm para evitar errores por imports circulares con `emitDecoratorMetadata`.
-- Los Services usan repositorios (`@InjectRepository`), no arreglos en memoria. `src/common/semilla.ts` carga carreras, universidades, ofertas y el usuario demo de forma idempotente; se ejecuta con `npm run seed` y en las pruebas e2e.
+- Los Services usan repositorios (`@InjectRepository`), no arreglos en memoria. `src/common/semilla.ts` carga de forma idempotente 5 carreras, 7 universidades (Bogota, Medellin, Cali y Barranquilla), sus ofertas (SNIES unicos) y el usuario demo; se ejecuta con `npm run seed` y en las pruebas e2e.
 - La API y `npm run test:e2e` necesitan PostgreSQL arriba (`docker compose up -d postgres`). `npm test` no: usa repositorios simulados.
 - pgAdmin: `docker compose up -d pgadmin` y abrir http://localhost:5050 (credenciales `PGADMIN_EMAIL` / `PGADMIN_PASSWORD` del `.env`). El servidor "API SAN" (host `postgres`, puerto 5432) se precarga desde `docker/pgadmin/servers.json` la primera vez que se crea el volumen `pgadmin_data`; la contrasena de la base se pide al conectar.
 - Si el puerto 5432 ya esta ocupado por un PostgreSQL local, cambiar `POSTGRES_PORT` en `.env` (por ejemplo 5433); Nest y Compose leen el mismo valor.
