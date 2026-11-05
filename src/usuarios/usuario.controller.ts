@@ -8,12 +8,29 @@ import {
   Post,
   Put,
 } from '@nestjs/common';
-import { FavoritoDto, PreferenciaDto } from './usuario.dto';
+import {
+  ActualizarUsuarioDto,
+  FavoritoDto,
+  PreferenciaDto,
+} from './usuario.dto';
 import { UsuarioService } from './usuario.service';
 
 @Controller('usuarios')
 export class UsuarioController {
   constructor(private readonly usuarioService: UsuarioService) {}
+
+  @Get(':id')
+  obtener(@Param('id', ParseUUIDPipe) id: string) {
+    return this.usuarioService.obtener(id);
+  }
+
+  @Put(':id')
+  actualizar(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() cambios: ActualizarUsuarioDto,
+  ) {
+    return this.usuarioService.actualizar(id, cambios);
+  }
 
   @Get(':id/preferencias')
   obtenerPreferencias(@Param('id', ParseUUIDPipe) id: string) {

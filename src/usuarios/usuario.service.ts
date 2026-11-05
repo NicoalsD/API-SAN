@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -6,7 +7,11 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { OfertaAcademica } from '../catalogo/oferta-academica.entity';
-import { FavoritoDto, PreferenciaDto } from './usuario.dto';
+import {
+  ActualizarUsuarioDto,
+  FavoritoDto,
+  PreferenciaDto,
+} from './usuario.dto';
 import { Usuario } from './usuario.entity';
 
 @Injectable()
@@ -17,6 +22,49 @@ export class UsuarioService {
     @InjectRepository(OfertaAcademica)
     private readonly ofertaRepository: Repository<OfertaAcademica>,
   ) {}
+
+  async obtener(id: string) {
+    const usuario = await this.buscarConPerfil(id);
+
+    return {
+      message: 'Usuario encontrado',
+      data: this.sinClave(usuario),
+    };
+  }
+
+  async actualizar(id: string, cambios: ActualizarUsuarioDto) {
+    const usuario = await this.buscarConPerfil(id);
+
+    if (cambios.correo !== undefined && cambios.correo !== usuario.correo) {
+      const existente = await this.usuarioRepository.findOneBy({
+        correo: cambios.correo,
+      });
+      if (existente !== null) {
+        throw new ConflictException(
+          `El correo ${cambios.correo} ya esta registrado`,
+        );
+      }
+    }
+
+    if (
+      usuario.perfil === null &&
+      cambios.perfil !== undefined &&
+      (!cambios.perfil.apellido || !cambios.perfil.ciudad)
+    ) {
+      throw new BadRequestException(
+        'Para crear el perfil se requieren apellido y ciudad',
+      );
+    }
+
+    const actualizado = await this.usuarioRepository.save(
+      this.usuarioRepository.merge(usuario, cambios),
+    );
+
+    return {
+      message: 'Usuario actualizado correctamente',
+      data: this.sinClave(actualizado),
+    };
+  }
 
   async obtenerPreferencias(id: string) {
     return (await this.buscarUsuario(id)).preferencias;
@@ -88,6 +136,24 @@ export class UsuarioService {
     }
 
     return usuario;
+  }
+
+  private async buscarConPerfil(id: string) {
+    const usuario = await this.usuarioRepository.findOne({
+      where: { id },
+      relations: { perfil: true },
+    });
+    if (usuario === null) {
+      throw new NotFoundException(`Usuario con ID ${id} no existe`);
+    }
+
+    return usuario;
+  }
+
+  private sinClave(usuario: Usuario) {
+    const { clave: _clave, ...datos } = usuario;
+
+    return datos;
   }
 
   private idsFavoritos(usuario: Usuario) {

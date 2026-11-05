@@ -1,14 +1,16 @@
+import { OmitType, PartialType } from '@nestjs/mapped-types';
+import { Type } from 'class-transformer';
 import {
   IsInt,
   IsNotEmpty,
   IsOptional,
-  IsString,
-  IsUrl,
   IsUUID,
   Max,
-  MaxLength,
   Min,
+  ValidateNested,
 } from 'class-validator';
+import { RegistroDto } from '../auth/auth.dto';
+import { ActualizarPerfilDto } from './perfil.dto';
 
 export class PreferenciaDto {
   @IsInt()
@@ -38,19 +40,11 @@ export class FavoritoDto {
   ofertaId: string;
 }
 
-export class CrearPerfilDto {
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(100)
-  apellido: string;
-
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(100)
-  ciudad: string;
-
+export class ActualizarUsuarioDto extends PartialType(
+  OmitType(RegistroDto, ['perfil'] as const),
+) {
   @IsOptional()
-  @IsUrl()
-  @MaxLength(255)
-  avatar?: string;
+  @ValidateNested()
+  @Type(() => ActualizarPerfilDto)
+  perfil?: ActualizarPerfilDto;
 }
