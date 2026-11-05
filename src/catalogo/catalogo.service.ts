@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { ILike, In, Repository } from 'typeorm';
 import { CarreraDto, OfertaAcademicaDto, UniversidadDto } from './catalogo.dto';
 import { Carrera } from './carrera.entity';
 import { OfertaAcademica } from './oferta-academica.entity';
@@ -17,8 +17,11 @@ export class CatalogoService {
     private readonly ofertaRepository: Repository<OfertaAcademica>,
   ) {}
 
-  async listarCarreras(): Promise<CarreraDto[]> {
-    return this.carreraRepository.find({ order: { nombre: 'ASC' } });
+  async listarCarreras(nombre?: string): Promise<CarreraDto[]> {
+    return this.carreraRepository.find({
+      where: nombre ? { nombre: ILike(`%${this.escaparLike(nombre)}%`) } : {},
+      order: { nombre: 'ASC' },
+    });
   }
 
   async obtenerCarrera(id: string) {
@@ -30,8 +33,11 @@ export class CatalogoService {
     return carrera;
   }
 
-  async listarUniversidades(): Promise<UniversidadDto[]> {
-    return this.universidadRepository.find({ order: { nombre: 'ASC' } });
+  async listarUniversidades(ciudad?: string): Promise<UniversidadDto[]> {
+    return this.universidadRepository.find({
+      where: ciudad ? { ciudad: ILike(this.escaparLike(ciudad)) } : {},
+      order: { nombre: 'ASC' },
+    });
   }
 
   async obtenerUniversidad(id: string) {
@@ -85,6 +91,10 @@ export class CatalogoService {
     }
 
     return oferta;
+  }
+
+  private escaparLike(texto: string) {
+    return texto.replace(/[\\%_]/g, '\\$&');
   }
 
   private aDto(oferta: OfertaAcademica): OfertaAcademicaDto {

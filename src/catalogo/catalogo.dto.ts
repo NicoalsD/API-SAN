@@ -1,3 +1,19 @@
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+
+export class FiltroCarreraDto {
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  nombre?: string;
+}
+
+export class FiltroUniversidadDto {
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  ciudad?: string;
+}
+
 export class CarreraDto {
   id: string;
   nombre: string;
