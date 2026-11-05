@@ -1,7 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ILike, In, Repository } from 'typeorm';
-import { CarreraDto, OfertaAcademicaDto, UniversidadDto } from './catalogo.dto';
+import {
+  CarreraDto,
+  OfertaAcademicaDto,
+  UniversidadDetalleDto,
+  UniversidadDto,
+} from './catalogo.dto';
 import { Carrera } from './carrera.entity';
 import { OfertaAcademica } from './oferta-academica.entity';
 import { Universidad } from './universidad.entity';
@@ -40,13 +45,24 @@ export class CatalogoService {
     });
   }
 
-  async obtenerUniversidad(id: string) {
+  async obtenerUniversidad(id: string): Promise<UniversidadDetalleDto> {
     const universidad = await this.universidadRepository.findOneBy({ id });
     if (universidad === null) {
       throw new NotFoundException(`Universidad con ID ${id} no existe`);
     }
 
-    return universidad;
+    const ofertas = await this.ofertaRepository.find({
+      where: { universidad: { id } },
+      relations: { universidad: true, carrera: true },
+      order: { snies: 'ASC' },
+    });
+
+    return {
+      id: universidad.id,
+      nombre: universidad.nombre,
+      ciudad: universidad.ciudad,
+      ofertas: ofertas.map((oferta) => this.aDto(oferta)),
+    };
   }
 
   async listarOfertas(): Promise<OfertaAcademicaDto[]> {

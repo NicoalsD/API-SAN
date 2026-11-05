@@ -10,7 +10,7 @@ import { Universidad } from './universidad.entity';
 describe('CatalogoService', () => {
   let service: CatalogoService;
   let carreraRepository: { find: jest.Mock };
-  let universidadRepository: { find: jest.Mock };
+  let universidadRepository: { find: jest.Mock; findOneBy: jest.Mock };
   let ofertaRepository: {
     find: jest.Mock;
     findOne: jest.Mock;
@@ -31,7 +31,7 @@ describe('CatalogoService', () => {
 
   beforeEach(() => {
     carreraRepository = { find: jest.fn() };
-    universidadRepository = { find: jest.fn() };
+    universidadRepository = { find: jest.fn(), findOneBy: jest.fn() };
     ofertaRepository = {
       find: jest.fn(),
       findOne: jest.fn(),
@@ -125,5 +125,56 @@ describe('CatalogoService', () => {
     await expect(service.obtenerOferta('999')).rejects.toThrow(
       NotFoundException,
     );
+  });
+
+  it('devuelve la universidad con sus ofertas', async () => {
+    const universidadId = '00000000-0000-4000-8000-000000000021';
+    universidadRepository.findOneBy.mockResolvedValue({
+      id: universidadId,
+      nombre: 'Universidad Nacional de Colombia',
+      ciudad: 'Bogota',
+      ofertas: [],
+    });
+    ofertaRepository.find.mockResolvedValue([oferta]);
+
+    const resultado = await service.obtenerUniversidad(universidadId);
+
+    expect(ofertaRepository.find).toHaveBeenCalledWith({
+      where: { universidad: { id: universidadId } },
+      relations: { universidad: true, carrera: true },
+      order: { snies: 'ASC' },
+    });
+    expect(resultado.id).toBe(universidadId);
+    expect(resultado.nombre).toBe('Universidad Nacional de Colombia');
+    expect(resultado.ciudad).toBe('Bogota');
+    expect(resultado.ofertas).toHaveLength(1);
+    expect(resultado.ofertas[0]).toMatchObject({
+      id: oferta.id,
+      universidad: 'Universidad Nacional de Colombia',
+      carrera: 'Ingenieria de Sistemas',
+      snies: '1001',
+    });
+  });
+
+  it('devuelve ofertas vacias si la universidad no tiene', async () => {
+    universidadRepository.findOneBy.mockResolvedValue({
+      id: 'u1',
+      nombre: 'Universidad X',
+      ciudad: 'Cali',
+    });
+    ofertaRepository.find.mockResolvedValue([]);
+
+    const resultado = await service.obtenerUniversidad('u1');
+
+    expect(resultado.ofertas).toEqual([]);
+  });
+
+  it('lanza error si la universidad no existe', async () => {
+    universidadRepository.findOneBy.mockResolvedValue(null);
+
+    await expect(service.obtenerUniversidad('999')).rejects.toThrow(
+      NotFoundException,
+    );
+    expect(ofertaRepository.find).not.toHaveBeenCalled();
   });
 });
