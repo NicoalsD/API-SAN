@@ -35,7 +35,12 @@ export class BusquedaService {
         oferta,
         ...this.scoringService.calcular(oferta, filtros),
       }))
-      .sort((a, b) => b.puntaje - a.puntaje);
+      .sort(
+        (a, b) =>
+          b.puntaje - a.puntaje ||
+          a.oferta.costo - b.oferta.costo ||
+          a.oferta.universidad.localeCompare(b.oferta.universidad),
+      );
 
     const busqueda = await this.busquedaRepository.save(
       this.busquedaRepository.create({
