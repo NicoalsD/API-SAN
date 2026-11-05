@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CatalogoService } from '../catalogo/catalogo.service';
 import { OfertaAcademicaDto } from '../catalogo/catalogo.dto';
+import { Usuario } from '../usuarios/usuario.entity';
 import { Busqueda } from './busqueda.entity';
 import { BusquedaRequestDto, ResultadoBusquedaDto } from './busqueda.dto';
 import { ScoringService } from './scoring.service';
@@ -12,23 +13,35 @@ export class BusquedaService {
   constructor(
     @InjectRepository(Busqueda)
     private readonly busquedaRepository: Repository<Busqueda>,
+    @InjectRepository(Usuario)
+    private readonly usuarioRepository: Repository<Usuario>,
     private readonly catalogoService: CatalogoService,
     private readonly scoringService: ScoringService,
   ) {}
 
   async crear(datos: BusquedaRequestDto) {
+    const { usuarioId, ...filtros } = datos;
+    let usuario: Usuario | null = null;
+    if (usuarioId !== undefined) {
+      usuario = await this.usuarioRepository.findOneBy({ id: usuarioId });
+      if (usuario === null) {
+        throw new NotFoundException(`Usuario con ID ${usuarioId} no existe`);
+      }
+    }
+
     const ofertas = await this.catalogoService.listarOfertas();
-    const resultados: ResultadoBusquedaDto[] = this.filtrar(ofertas, datos)
+    const resultados: ResultadoBusquedaDto[] = this.filtrar(ofertas, filtros)
       .map((oferta) => ({
         oferta,
-        ...this.scoringService.calcular(oferta, datos),
+        ...this.scoringService.calcular(oferta, filtros),
       }))
       .sort((a, b) => b.puntaje - a.puntaje);
 
     const busqueda = await this.busquedaRepository.save(
       this.busquedaRepository.create({
-        filtros: datos,
+        filtros,
         resultados,
+        usuario,
       }),
     );
 
