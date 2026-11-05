@@ -2,12 +2,16 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
   JoinTable,
   ManyToMany,
+  OneToOne,
   PrimaryGeneratedColumn,
   type Relation,
+  UpdateDateColumn,
 } from 'typeorm';
 import { OfertaAcademica } from '../catalogo/oferta-academica.entity';
+import { Perfil } from './perfil.entity';
 import { PreferenciaDto } from './usuario.dto';
 
 @Entity('usuarios')
@@ -33,6 +37,13 @@ export class Usuario {
   @JoinTable({ name: 'usuario_favoritos' })
   favoritos: Relation<OfertaAcademica[]>;
 
+  @OneToOne(() => Perfil, { nullable: true, cascade: true })
+  @JoinColumn({ name: 'perfil_id' })
+  perfil: Relation<Perfil> | null;
+
   @CreateDateColumn()
   fechaRegistro: Date;
+
+  @UpdateDateColumn()
+  fechaActualizacion: Date;
 }

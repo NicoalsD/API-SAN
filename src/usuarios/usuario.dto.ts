@@ -1,4 +1,14 @@
-import { IsInt, IsNotEmpty, IsUUID, Max, Min } from 'class-validator';
+import {
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUrl,
+  IsUUID,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 
 export class PreferenciaDto {
   @IsInt()
@@ -26,4 +36,21 @@ export class FavoritoDto {
   @IsUUID()
   @IsNotEmpty()
   ofertaId: string;
+}
+
+export class CrearPerfilDto {
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(100)
+  apellido: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(100)
+  ciudad: string;
+
+  @IsOptional()
+  @IsUrl()
+  @MaxLength(255)
+  avatar?: string;
 }
