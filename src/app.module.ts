@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { APP_FILTER } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Env } from './env.model';
@@ -6,6 +7,7 @@ import { AuthModule } from './auth/auth.module';
 import { BusquedaModule } from './busquedas/busqueda.module';
 import { CatalogoModule } from './catalogo/catalogo.module';
 import { ComparacionModule } from './comparacion/comparacion.module';
+import { QueryFailedFilter } from './common/filtros/query-failed.filter';
 import { UsuarioModule } from './usuarios/usuario.module';
 
 @Module({
@@ -32,5 +34,6 @@ import { UsuarioModule } from './usuarios/usuario.module';
     CatalogoModule,
     ComparacionModule,
   ],
+  providers: [{ provide: APP_FILTER, useClass: QueryFailedFilter }],
 })
 export class AppModule {}
