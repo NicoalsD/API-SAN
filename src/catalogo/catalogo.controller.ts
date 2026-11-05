@@ -1,4 +1,5 @@
-import { Controller, Get, Param, ParseUUIDPipe } from '@nestjs/common';
+import { Controller, Get, Param, ParseUUIDPipe, Query } from '@nestjs/common';
+import { FiltroCarreraDto, FiltroUniversidadDto } from './catalogo.dto';
 import { CatalogoService } from './catalogo.service';
 
 @Controller()
@@ -6,8 +7,8 @@ export class CatalogoController {
   constructor(private readonly catalogoService: CatalogoService) {}
 
   @Get('carreras')
-  listarCarreras() {
-    return this.catalogoService.listarCarreras();
+  listarCarreras(@Query() filtros: FiltroCarreraDto) {
+    return this.catalogoService.listarCarreras(filtros.nombre);
   }
 
   @Get('carreras/:id')
@@ -16,8 +17,8 @@ export class CatalogoController {
   }
 
   @Get('universidades')
-  listarUniversidades() {
-    return this.catalogoService.listarUniversidades();
+  listarUniversidades(@Query() filtros: FiltroUniversidadDto) {
+    return this.catalogoService.listarUniversidades(filtros.ciudad);
   }
 
   @Get('universidades/:id')
