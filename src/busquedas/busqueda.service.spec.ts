@@ -5,6 +5,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { IDS_SEMILLA } from '../common/semilla';
 import { CatalogoService } from '../catalogo/catalogo.service';
 import { OfertaAcademicaDto } from '../catalogo/catalogo.dto';
+import { Usuario } from '../usuarios/usuario.entity';
 import { Busqueda } from './busqueda.entity';
 import { BusquedaService } from './busqueda.service';
 import { ScoringService } from './scoring.service';
@@ -79,6 +80,7 @@ describe('BusquedaService', () => {
     create: jest.Mock;
     save: jest.Mock;
   };
+  let usuarioRepository: { findOneBy: jest.Mock };
   let catalogoService: {
     listarOfertas: jest.Mock;
   };
@@ -93,6 +95,7 @@ describe('BusquedaService', () => {
         ...datos,
       })),
     };
+    usuarioRepository = { findOneBy: jest.fn() };
     catalogoService = {
       listarOfertas: jest.fn(async () => OFERTAS),
     };
@@ -104,6 +107,10 @@ describe('BusquedaService', () => {
         {
           provide: getRepositoryToken(Busqueda),
           useValue: busquedaRepository,
+        },
+        {
+          provide: getRepositoryToken(Usuario),
+          useValue: usuarioRepository,
         },
         {
           provide: CatalogoService,
@@ -126,6 +133,47 @@ describe('BusquedaService', () => {
     expect(resultados[0].puntaje).toBeGreaterThanOrEqual(
       resultados[resultados.length - 1].puntaje,
     );
+  });
+
+  it('asocia la busqueda al usuario sin guardar usuarioId en filtros', async () => {
+    const usuario = { id: IDS_SEMILLA.usuario } as Usuario;
+    usuarioRepository.findOneBy.mockResolvedValue(usuario);
+
+    await service.crear({
+      carrera: 'Derecho',
+      usuarioId: usuario.id,
+    });
+
+    expect(usuarioRepository.findOneBy).toHaveBeenCalledWith({
+      id: usuario.id,
+    });
+    expect(busquedaRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        usuario,
+        filtros: { carrera: 'Derecho' },
+      }),
+    );
+  });
+
+  it('guarda la busqueda sin usuario si no viene usuarioId', async () => {
+    await service.crear({ carrera: 'Derecho' });
+
+    expect(usuarioRepository.findOneBy).not.toHaveBeenCalled();
+    expect(busquedaRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({ usuario: null }),
+    );
+  });
+
+  it('lanza error si el usuario no existe', async () => {
+    usuarioRepository.findOneBy.mockResolvedValue(null);
+
+    await expect(
+      service.crear({
+        carrera: 'Derecho',
+        usuarioId: '11111111-1111-4111-8111-111111111111',
+      }),
+    ).rejects.toThrow(NotFoundException);
+    expect(busquedaRepository.save).not.toHaveBeenCalled();
   });
 
   it('lanza error si la busqueda no existe', async () => {
