@@ -22,7 +22,11 @@ export class ScoringService {
       costo: this.puntajeCosto(oferta, filtros.costoMax),
       modalidad:
         !filtros.modalidad || oferta.modalidad === filtros.modalidad ? 1 : 0,
-      ubicacion: !filtros.ciudad || oferta.ciudad === filtros.ciudad ? 1 : 0,
+      ubicacion:
+        !filtros.ciudad ||
+        oferta.ciudad.toLowerCase() === filtros.ciudad.toLowerCase()
+          ? 1
+          : 0,
       acreditacion: oferta.acreditacion ? 1 : 0,
     };
 
