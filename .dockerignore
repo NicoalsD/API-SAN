@@ -3,5 +3,7 @@ dist
 coverage
 .env
 .git
+test
+*.rpm
 *.tsbuildinfo
 npm-debug.log
