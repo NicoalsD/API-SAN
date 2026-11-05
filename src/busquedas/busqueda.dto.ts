@@ -9,6 +9,7 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
+import { JORNADAS, MODALIDADES } from '../common/constantes';
 import { OfertaAcademicaDto } from '../catalogo/catalogo.dto';
 import { PreferenciaDto } from '../usuarios/usuario.dto';
 
@@ -27,11 +28,11 @@ export class BusquedaRequestDto {
   costoMax?: number;
 
   @IsOptional()
-  @IsIn(['presencial', 'virtual', 'hibrida'])
+  @IsIn(MODALIDADES)
   modalidad?: string;
 
   @IsOptional()
-  @IsIn(['diurna', 'nocturna', 'mixta'])
+  @IsIn(JORNADAS)
   jornada?: string;
 
   @IsOptional()
