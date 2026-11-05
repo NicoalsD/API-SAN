@@ -27,7 +27,7 @@ describe('API SAN (e2e)', () => {
       .send({
         nombre: 'Ana',
         correo: `ana-${randomUUID()}@correo.com`,
-        clave: '123456',
+        clave: '12345678',
       })
       .expect(201)
       .expect((respuesta) => {
@@ -53,7 +53,7 @@ describe('API SAN (e2e)', () => {
     const datos = {
       nombre: 'Ana',
       correo: `ana-${randomUUID()}@correo.com`,
-      clave: '123456',
+      clave: '12345678',
     };
     await request(app.getHttpServer())
       .post('/auth/registro')
@@ -125,7 +125,7 @@ describe('API SAN (e2e)', () => {
     const correo = `preferencias-${randomUUID()}@correo.com`;
     const registro = await request(app.getHttpServer())
       .post('/auth/registro')
-      .send({ nombre: 'Ana', correo, clave: '123456' })
+      .send({ nombre: 'Ana', correo, clave: '12345678' })
       .expect(201);
     const usuarioId = registro.body.data.accessToken.replace('token-', '');
 
@@ -149,7 +149,7 @@ describe('API SAN (e2e)', () => {
     const correo = `favoritos-${randomUUID()}@correo.com`;
     const registro = await request(app.getHttpServer())
       .post('/auth/registro')
-      .send({ nombre: 'Ana', correo, clave: '123456' })
+      .send({ nombre: 'Ana', correo, clave: '12345678' })
       .expect(201);
     const usuarioId = registro.body.data.accessToken.replace('token-', '');
 
