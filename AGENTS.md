@@ -22,7 +22,7 @@ API REST en NestJS para busqueda, consulta y comparacion de ofertas academicas: 
 ## Estructura (capas)
 
 - Una carpeta por recurso en `src/`: `auth/`, `usuarios/`, `busquedas/`, `catalogo/`, `comparacion/`.
-- Archivos por recurso: `<recurso>.controller.ts`, `<recurso>.service.ts`, `<singular>.dto.ts`, `<singular>.module.ts`, `<singular>.entity.ts` (todas las clases Dto del recurso en ese unico archivo).
+- Archivos por recurso: `<recurso>.controller.ts`, `<recurso>.service.ts`, `<singular>.dto.ts`, `<singular>.module.ts`, `<singular>.entity.ts` (todas las clases Dto del recurso en ese unico archivo). Excepcion: los DTOs del perfil viven en `usuarios/perfil.dto.ts` (como `dtos/profile.dto.ts` en `book-nestjs-5a`) para evitar un import circular entre `auth.dto.ts` y `usuario.dto.ts`.
 - Modulos de Nest: cada recurso migra a su propio `<singular>.module.ts` (clase `<Singular>Module`, en espanol) que registra su controller y service y exporta el service; `src/app.module.ts` solo lo importa. Todos los recursos tienen modulo: `AuthModule`, `UsuarioModule`, `BusquedaModule`, `CatalogoModule`, `ComparacionModule`; `ComparacionModule` importa `CatalogoModule`.
 - `src/main.ts` habilita CORS para el origen de `CORS_ORIGIN` y usa `ValidationPipe` global con `whitelist`, `forbidNonWhitelisted` y `transform` (campos no declarados en el DTO responden 400; query y params se convierten a su tipo) y escucha en `process.env.PORT ?? 3000`.
 
@@ -35,7 +35,7 @@ API REST en NestJS para busqueda, consulta y comparacion de ofertas academicas: 
 | Controller | Endpoints | Service |
 |---|---|---|
 | AuthController | POST /auth/registro, POST /auth/login, POST /auth/refresh | AuthService |
-| UsuarioController | GET/PUT /usuarios/{id}/preferencias, GET/POST /usuarios/{id}/favoritos, DELETE /usuarios/{id}/favoritos/{ofertaId} | UsuarioService |
+| UsuarioController | GET/PUT /usuarios/{id}, GET/PUT /usuarios/{id}/preferencias, GET/POST /usuarios/{id}/favoritos, DELETE /usuarios/{id}/favoritos/{ofertaId} | UsuarioService |
 | BusquedaController | POST /busquedas, GET /busquedas/{id}, GET /busquedas/{id}/resultados | BusquedaService + ScoringService |
 | ComparacionController | POST /comparaciones, GET /comparaciones/{id}, DELETE /comparaciones/{id} | ComparacionService |
 | CatalogoController | GET /carreras, GET /carreras/{id}, GET /universidades, GET /ofertas/{id} | CatalogoService |
@@ -47,6 +47,9 @@ DTOs clave (nombres exactos del diagrama):
 - `ComparacionRequestDTO`: ofertaIds[]. `ComparacionDTO`: tabla comparativa.
 - `OfertaAcademicaDTO`: costo, modalidad, duracion, acreditacion, SNIES.
 - `PreferenciaDTO`: pesos por criterio.
+- `CrearPerfilDto` / `ActualizarPerfilDto` (`PartialType`): apellido, ciudad, avatar. `RegistroDto.perfil` es obligatorio y anidado (`@ValidateNested` + `@Type`).
+- `ActualizarUsuarioDto`: `PartialType(OmitType(RegistroDto, ['perfil']))` + `perfil` opcional de tipo `ActualizarPerfilDto` (`@nestjs/mapped-types`, igual que la Clase 7b de `book-nestjs-5a`).
+- Actualizar con relaciones: buscar con `relations: { perfil: true }`, aplicar cambios con `repository.merge` y guardar con `save` (el `cascade` actualiza el perfil existente). Nunca devolver `clave` en las respuestas.
 
 ## Comandos
 

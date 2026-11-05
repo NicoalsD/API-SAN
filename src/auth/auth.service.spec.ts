@@ -21,7 +21,9 @@ describe('AuthService', () => {
     clave: '123456',
     preferencias: { costo: 3, modalidad: 3, ubicacion: 3, acreditacion: 3 },
     favoritos: [],
+    perfil: null,
     fechaRegistro: new Date(),
+    fechaActualizacion: new Date(),
   } as Usuario;
 
   beforeEach(async () => {
@@ -54,7 +56,8 @@ describe('AuthService', () => {
     const resultado = await service.registrar({
       nombre: 'Ana',
       correo: 'ana@correo.com',
-      clave: '123456',
+      clave: '12345678',
+      perfil: { apellido: 'Gomez', ciudad: 'Bogota' },
     });
 
     expect(resultado.data.accessToken).toBeDefined();
@@ -76,7 +79,8 @@ describe('AuthService', () => {
       service.registrar({
         nombre: 'Nicolas',
         correo: 'nicolas@correo.com',
-        clave: '123456',
+        clave: '12345678',
+        perfil: { apellido: 'Diaz', ciudad: 'Bogota' },
       }),
     ).rejects.toThrow(ConflictException);
   });
