@@ -1,10 +1,13 @@
+import { Type } from 'class-transformer';
 import {
   IsEmail,
   IsNotEmpty,
   IsString,
   MaxLength,
   MinLength,
+  ValidateNested,
 } from 'class-validator';
+import { CrearPerfilDto } from '../usuarios/usuario.dto';
 
 export class RegistroDto {
   @IsString()
@@ -21,6 +24,11 @@ export class RegistroDto {
   @IsNotEmpty()
   @MinLength(8)
   clave: string;
+
+  @ValidateNested()
+  @Type(() => CrearPerfilDto)
+  @IsNotEmpty()
+  perfil: CrearPerfilDto;
 }
 
 export class LoginDto {

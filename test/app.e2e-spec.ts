@@ -28,6 +28,7 @@ describe('API SAN (e2e)', () => {
         nombre: 'Ana',
         correo: `ana-${randomUUID()}@correo.com`,
         clave: '12345678',
+        perfil: { apellido: 'Gomez', ciudad: 'Bogota' },
       })
       .expect(201)
       .expect((respuesta) => {
@@ -54,6 +55,7 @@ describe('API SAN (e2e)', () => {
       nombre: 'Ana',
       correo: `ana-${randomUUID()}@correo.com`,
       clave: '12345678',
+      perfil: { apellido: 'Gomez', ciudad: 'Bogota' },
     };
     await request(app.getHttpServer())
       .post('/auth/registro')
@@ -125,7 +127,12 @@ describe('API SAN (e2e)', () => {
     const correo = `preferencias-${randomUUID()}@correo.com`;
     const registro = await request(app.getHttpServer())
       .post('/auth/registro')
-      .send({ nombre: 'Ana', correo, clave: '12345678' })
+      .send({
+        nombre: 'Ana',
+        correo,
+        clave: '12345678',
+        perfil: { apellido: 'Gomez', ciudad: 'Bogota' },
+      })
       .expect(201);
     const usuarioId = registro.body.data.accessToken.replace('token-', '');
 
@@ -149,7 +156,12 @@ describe('API SAN (e2e)', () => {
     const correo = `favoritos-${randomUUID()}@correo.com`;
     const registro = await request(app.getHttpServer())
       .post('/auth/registro')
-      .send({ nombre: 'Ana', correo, clave: '12345678' })
+      .send({
+        nombre: 'Ana',
+        correo,
+        clave: '12345678',
+        perfil: { apellido: 'Gomez', ciudad: 'Bogota' },
+      })
       .expect(201);
     const usuarioId = registro.body.data.accessToken.replace('token-', '');
 

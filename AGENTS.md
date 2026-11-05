@@ -70,7 +70,8 @@ DTOs clave (nombres exactos del diagrama):
 - Entidades (TypeORM, nombres en espanol, `@PrimaryGeneratedColumn('uuid')`), cada una registrada con `TypeOrmModule.forFeature` en su modulo:
   - `catalogo/carrera.entity.ts` (`Carrera`, tabla `carreras`) y `catalogo/universidad.entity.ts` (`Universidad`, tabla `universidades`): 1:N con `OfertaAcademica`.
   - `catalogo/oferta-academica.entity.ts` (`OfertaAcademica`, tabla `ofertas_academicas`): snies unico, ciudad, costo, modalidad, jornada, duracion, acreditacion; N:1 con `Universidad` y `Carrera`.
-  - `usuarios/usuario.entity.ts` (`Usuario`, tabla `usuarios`): nombre, correo unico, clave, preferencias (jsonb), favoritos N:M con `OfertaAcademica` (tabla `usuario_favoritos`).
+  - `usuarios/usuario.entity.ts` (`Usuario`, tabla `usuarios`): nombre, correo unico, clave, preferencias (jsonb), favoritos N:M con `OfertaAcademica` (tabla `usuario_favoritos`), perfil 1:1 opcional con `Perfil` (`@OneToOne` con `cascade: true` y `@JoinColumn` `perfil_id`).
+  - `usuarios/perfil.entity.ts` (`Perfil`, tabla `perfiles`): apellido, ciudad, avatar opcional, `fechaRegistro` (`@CreateDateColumn`) y `fechaActualizacion` (`@UpdateDateColumn`). Se crea junto con el usuario en `POST /auth/registro` gracias al `cascade`.
   - `busquedas/busqueda.entity.ts` (`Busqueda`, tabla `busquedas`): filtros y resultados (jsonb), N:1 opcional con `Usuario`.
   - `comparacion/comparacion.entity.ts` (`Comparacion`, tabla `comparaciones`): ofertas N:M (tabla `comparacion_ofertas`), tabla (jsonb), `mejorOferta` N:1.
 - Las propiedades de relacion usan `Relation<...>` de typeorm para evitar errores por imports circulares con `emitDecoratorMetadata`.

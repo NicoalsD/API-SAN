@@ -303,6 +303,7 @@ export async function sembrarBd(dataSource: DataSource) {
         correo: 'nicolas@correo.com',
         clave: '123456',
         preferencias: { costo: 3, modalidad: 3, ubicacion: 3, acreditacion: 3 },
+        perfil: { apellido: 'Diaz', ciudad: 'Bogota' },
       }),
     );
   }

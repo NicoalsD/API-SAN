@@ -73,7 +73,7 @@ Los ejemplos de este documento usan los datos de `npm run seed`. Usuario demo: `
 
 ### POST /auth/registro
 
-Registra un usuario nuevo.
+Registra un usuario nuevo junto con su perfil (relacion 1:1 guardada en cascada).
 
 **Body** (`RegistroDto`)
 
@@ -82,6 +82,10 @@ Registra un usuario nuevo.
 | `nombre` | string | Requerido, no vacio, maximo 100 caracteres |
 | `correo` | string | Requerido, formato de correo valido, maximo 150 caracteres. Debe ser unico |
 | `clave` | string | Requerido, minimo 8 caracteres |
+| `perfil` | objeto (`CrearPerfilDto`) | Requerido, se valida anidado |
+| `perfil.apellido` | string | Requerido, no vacio, maximo 100 caracteres |
+| `perfil.ciudad` | string | Requerido, no vacio, maximo 100 caracteres |
+| `perfil.avatar` | string | Opcional, URL valida, maximo 255 caracteres |
 
 **Respuesta 201**
 
@@ -109,7 +113,7 @@ Nota: la clave se guarda sin hash en esta etapa (BCrypt esta fuera del alcance a
 ```bash
 curl -X POST http://localhost:3000/auth/registro \
   -H "Content-Type: application/json" \
-  -d '{"nombre":"Ana Lopez","correo":"ana@correo.com","clave":"clave12345"}'
+  -d '{"nombre":"Ana","correo":"ana@correo.com","clave":"clave12345","perfil":{"apellido":"Lopez","ciudad":"Bogota"}}'
 ```
 
 ### POST /auth/login
