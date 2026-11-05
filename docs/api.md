@@ -29,6 +29,8 @@ Base URL: `http://localhost:3000` (o el valor de `PORT`). No hay prefijo global:
 | Auth | POST | `/auth/registro` | Registra un usuario y devuelve tokens |
 | Auth | POST | `/auth/login` | Inicia sesion y devuelve tokens |
 | Auth | POST | `/auth/refresh` | Renueva los tokens con un refresh token |
+| Usuarios | GET | `/usuarios/{id}` | Consulta el usuario con su perfil |
+| Usuarios | PUT | `/usuarios/{id}` | Actualiza datos del usuario y su perfil |
 | Usuarios | GET | `/usuarios/{id}/preferencias` | Consulta las preferencias del usuario |
 | Usuarios | PUT | `/usuarios/{id}/preferencias` | Actualiza las preferencias del usuario |
 | Usuarios | GET | `/usuarios/{id}/favoritos` | Lista los IDs de ofertas favoritas |
@@ -196,6 +198,73 @@ curl -X POST http://localhost:3000/auth/refresh \
 ## Usuarios
 
 Todos los endpoints de este grupo reciben `:id` (UUID del usuario). Si el usuario no existe, responden 404 con `Usuario con ID <id> no existe`.
+
+### GET /usuarios/{id}
+
+Devuelve el usuario con su perfil (`relations: { perfil: true }`). La clave nunca se incluye.
+
+**Respuesta 200**
+
+```json
+{
+  "message": "Usuario encontrado",
+  "data": {
+    "id": "00000000-0000-4000-8000-000000000001",
+    "nombre": "Nicolas",
+    "correo": "nicolas@correo.com",
+    "preferencias": { "costo": 3, "modalidad": 3, "ubicacion": 3, "acreditacion": 3 },
+    "perfil": { "id": "...", "apellido": "Diaz", "ciudad": "Bogota", "avatar": null },
+    "fechaRegistro": "...",
+    "fechaActualizacion": "..."
+  }
+}
+```
+
+**Errores**
+
+| Codigo | Motivo |
+|---|---|
+| 400 | `id` no es un UUID |
+| 404 | `Usuario con ID <id> no existe` |
+
+**Ejemplo**
+
+```bash
+curl http://localhost:3000/usuarios/00000000-0000-4000-8000-000000000001
+```
+
+### PUT /usuarios/{id}
+
+Actualiza parcialmente el usuario y su perfil. Todos los campos son opcionales.
+
+**Body** (`ActualizarUsuarioDto`)
+
+| Campo | Tipo | Reglas |
+|---|---|---|
+| `nombre` | string | Opcional, maximo 100 caracteres |
+| `correo` | string | Opcional, correo valido, maximo 150 caracteres. Debe ser unico |
+| `clave` | string | Opcional, minimo 8 caracteres |
+| `perfil` | objeto (`ActualizarPerfilDto`) | Opcional; `apellido`, `ciudad` y `avatar` opcionales con las mismas reglas del registro |
+
+Si el usuario no tenia perfil, para crearlo se requieren `apellido` y `ciudad`.
+
+**Respuesta 200**: `{ "message": "Usuario actualizado correctamente", "data": <usuario con perfil, sin clave> }`
+
+**Errores**
+
+| Codigo | Motivo |
+|---|---|
+| 400 | Campos invalidos o no declarados, o perfil nuevo sin apellido y ciudad |
+| 404 | `Usuario con ID <id> no existe` |
+| 409 | `El correo <correo> ya esta registrado` |
+
+**Ejemplo**
+
+```bash
+curl -X PUT http://localhost:3000/usuarios/00000000-0000-4000-8000-000000000001 \
+  -H "Content-Type: application/json" \
+  -d '{"nombre":"Nico","perfil":{"ciudad":"Medellin"}}'
+```
 
 ### GET /usuarios/{id}/preferencias
 

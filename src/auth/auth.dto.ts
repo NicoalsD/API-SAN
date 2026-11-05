@@ -7,7 +7,7 @@ import {
   MinLength,
   ValidateNested,
 } from 'class-validator';
-import { CrearPerfilDto } from '../usuarios/usuario.dto';
+import { CrearPerfilDto } from '../usuarios/perfil.dto';
 
 export class RegistroDto {
   @IsString()
