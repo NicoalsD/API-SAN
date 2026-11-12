@@ -8,7 +8,11 @@ import {
   Post,
   Put,
   Query,
+  UseGuards,
 } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Roles } from '../auth/roles.decorator';
+import { RolesGuard } from '../auth/roles.guard';
 import {
   ActualizarCarreraDto,
   ActualizarOfertaDto,
@@ -37,11 +41,15 @@ export class CatalogoController {
   }
 
   @Post('carreras')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   crearCarrera(@Body() datos: CrearCarreraDto) {
     return this.catalogoService.crearCarrera(datos);
   }
 
   @Put('carreras/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   actualizarCarrera(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() cambios: ActualizarCarreraDto,
@@ -50,6 +58,8 @@ export class CatalogoController {
   }
 
   @Delete('carreras/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   eliminarCarrera(@Param('id', ParseUUIDPipe) id: string) {
     return this.catalogoService.eliminarCarrera(id);
   }
@@ -65,11 +75,15 @@ export class CatalogoController {
   }
 
   @Post('universidades')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   crearUniversidad(@Body() datos: CrearUniversidadDto) {
     return this.catalogoService.crearUniversidad(datos);
   }
 
   @Put('universidades/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   actualizarUniversidad(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() cambios: ActualizarUniversidadDto,
@@ -78,6 +92,8 @@ export class CatalogoController {
   }
 
   @Delete('universidades/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   eliminarUniversidad(@Param('id', ParseUUIDPipe) id: string) {
     return this.catalogoService.eliminarUniversidad(id);
   }
@@ -93,11 +109,15 @@ export class CatalogoController {
   }
 
   @Post('ofertas')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   crearOferta(@Body() datos: CrearOfertaDto) {
     return this.catalogoService.crearOferta(datos);
   }
 
   @Put('ofertas/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   actualizarOferta(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() cambios: ActualizarOfertaDto,
@@ -106,6 +126,8 @@ export class CatalogoController {
   }
 
   @Delete('ofertas/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   eliminarOferta(@Param('id', ParseUUIDPipe) id: string) {
     return this.catalogoService.eliminarOferta(id);
   }

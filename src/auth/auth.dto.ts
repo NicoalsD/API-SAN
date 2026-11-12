@@ -7,6 +7,7 @@ import {
   MinLength,
   ValidateNested,
 } from 'class-validator';
+import { Rol } from '../common/constantes';
 import { CrearPerfilDto } from '../usuarios/perfil.dto';
 
 export class RegistroDto {
@@ -47,7 +48,25 @@ export class RefreshDto {
   refreshToken: string;
 }
 
+export class UsuarioAutenticadoDto {
+  id: string;
+  nombre: string;
+  correo: string;
+  rol: Rol;
+}
+
 export class AuthResponseDto {
   accessToken: string;
   refreshToken: string;
+  usuario: UsuarioAutenticadoDto;
+}
+
+export interface PayloadAccesoJwt {
+  sub: string;
+  correo: string;
+  rol: Rol;
+}
+
+export interface PayloadRefreshJwt {
+  sub: string;
 }
