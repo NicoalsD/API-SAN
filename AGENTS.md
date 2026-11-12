@@ -67,6 +67,7 @@ DTOs clave (nombres exactos del diagrama):
 - Instalar: `npm install`
 - Cargar catalogo inicial: `npm run seed` (con PostgreSQL arriba y `.env` configurado)
 - Dev: `npm run start:dev` (http://localhost:3000)
+- Swagger UI: http://localhost:3000/docs (esquema JSON en `/docs-json`; con la API arriba)
 - PostgreSQL (Docker): `docker compose up -d postgres`
 - Build: `npm run build`
 - Lint: `npm run lint` (revisa `src/` y `test/`)

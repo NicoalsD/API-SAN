@@ -65,6 +65,8 @@ Para detener todo: `docker compose down`. Agregar `-v` solo si se quiere borrar 
 curl http://localhost:3000/carreras
 ```
 
+Documentacion interactiva (Swagger UI): http://localhost:3000/docs. El esquema en JSON esta en http://localhost:3000/docs-json.
+
 ## pgAdmin
 
 ```bash

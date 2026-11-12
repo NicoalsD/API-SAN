@@ -2,6 +2,8 @@
 
 Base URL: `http://localhost:3000` (o el valor de `PORT`). No hay prefijo global: las rutas cuelgan de la raiz (`/carreras`, `/busquedas`, etc.). Los cuerpos son JSON (`Content-Type: application/json`).
 
+La documentacion interactiva (Swagger UI) esta en http://localhost:3000/docs y el esquema OpenAPI en JSON en http://localhost:3000/docs-json. Los endpoints protegidos usan `Authorization: Bearer <accessToken>` (boton "Authorize" en Swagger).
+
 ## Convenciones
 
 - **Validacion**: `ValidationPipe` global con `whitelist`, `forbidNonWhitelisted` y `transform`. Un campo del body o de la query que no este declarado en el DTO responde 400. Query y params se convierten a su tipo.
