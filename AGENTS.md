@@ -59,7 +59,7 @@ DTOs clave (nombres exactos del diagrama):
 - `CrearCarreraDto` / `CrearUniversidadDto` (con `imagenUrl` opcional) / `CrearOfertaDto` (relaciones por `universidadId` y `carreraId`) y sus `Actualizar...Dto` (`PartialType`); `FiltroOfertaDto`. CRUD del catalogo: buscar o validar (404), `merge` + `save`, relaciones como `universidad: { id }`, duplicados de nombre/SNIES responden 409; las escrituras responden `{ message, data }`.
 - `PreferenciaDTO`: pesos por criterio.
 - `CrearPerfilDto` / `ActualizarPerfilDto` (`PartialType`): apellido, ciudad, avatar. `RegistroDto.perfil` es obligatorio y anidado (`@ValidateNested` + `@Type`).
-- `ActualizarUsuarioDto`: `PartialType(OmitType(RegistroDto, ['perfil']))` + `perfil` opcional de tipo `ActualizarPerfilDto` (`@nestjs/mapped-types`, igual que la Clase 7b de `book-nestjs-5a`).
+- `ActualizarUsuarioDto`: `PartialType(OmitType(RegistroDto, ['perfil']))` + `perfil` opcional de tipo `ActualizarPerfilDto` (importados de `@nestjs/swagger` para que Swagger herede las propiedades; la Clase 7b de `book-nestjs-5a` usa `@nestjs/mapped-types`).
 - Actualizar con relaciones: buscar con `relations: { perfil: true }`, aplicar cambios con `repository.merge` y guardar con `save` (el `cascade` actualiza el perfil existente). Nunca devolver `clave` en las respuestas.
 
 ## Comandos
