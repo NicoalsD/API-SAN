@@ -33,7 +33,59 @@ describe('API SAN (e2e)', () => {
       .expect(201)
       .expect((respuesta) => {
         expect(respuesta.body.data.accessToken).toBeDefined();
+        expect(respuesta.body.data.refreshToken).toBeDefined();
+        expect(respuesta.body.data.usuario).toEqual({
+          id: expect.any(String),
+          nombre: 'Ana',
+          correo: expect.stringContaining('@correo.com'),
+          rol: 'estudiante',
+        });
+        expect(respuesta.body.data.usuario).not.toHaveProperty('clave');
       });
+  });
+
+  it('POST /auth/login devuelve tokens y rol del usuario demo y del admin', async () => {
+    const estudiante = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ correo: 'nicolas@correo.com', clave: '12345678' })
+      .expect(201);
+    expect(estudiante.body.data.usuario.id).toBe(IDS_SEMILLA.usuario);
+    expect(estudiante.body.data.usuario.rol).toBe('estudiante');
+
+    const admin = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ correo: 'admin@correo.com', clave: 'admin12345' })
+      .expect(201);
+    expect(admin.body.data.usuario.id).toBe(IDS_SEMILLA.admin);
+    expect(admin.body.data.usuario.rol).toBe('admin');
+  });
+
+  it('POST /auth/login rechaza una clave incorrecta', () => {
+    return request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ correo: 'nicolas@correo.com', clave: 'incorrecta1' })
+      .expect(401);
+  });
+
+  it('POST /auth/refresh renueva los tokens y no acepta un access token', async () => {
+    const login = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ correo: 'nicolas@correo.com', clave: '12345678' })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .post('/auth/refresh')
+      .send({ refreshToken: login.body.data.refreshToken })
+      .expect(201)
+      .expect((respuesta) => {
+        expect(respuesta.body.data.accessToken).toBeDefined();
+        expect(respuesta.body.data.usuario.id).toBe(IDS_SEMILLA.usuario);
+      });
+
+    await request(app.getHttpServer())
+      .post('/auth/refresh')
+      .send({ refreshToken: login.body.data.accessToken })
+      .expect(401);
   });
 
   it('POST /auth/login rechaza credenciales invalidas', () => {
@@ -134,10 +186,16 @@ describe('API SAN (e2e)', () => {
         perfil: { apellido: 'Gomez', ciudad: 'Bogota' },
       })
       .expect(201);
-    const usuarioId = registro.body.data.accessToken.replace('token-', '');
+    const usuarioId = registro.body.data.usuario.id;
+    const token = `Bearer ${registro.body.data.accessToken}`;
+
+    await request(app.getHttpServer())
+      .get(`/usuarios/${usuarioId}/preferencias`)
+      .expect(401);
 
     await request(app.getHttpServer())
       .put(`/usuarios/${usuarioId}/preferencias`)
+      .set('Authorization', token)
       .send({ costo: 5, modalidad: 4, ubicacion: 3, acreditacion: 2 })
       .expect(200)
       .expect((respuesta) => {
@@ -146,6 +204,7 @@ describe('API SAN (e2e)', () => {
 
     await request(app.getHttpServer())
       .get(`/usuarios/${usuarioId}/preferencias`)
+      .set('Authorization', token)
       .expect(200)
       .expect((respuesta) => {
         expect(respuesta.body.costo).toBe(5);
@@ -163,10 +222,12 @@ describe('API SAN (e2e)', () => {
         perfil: { apellido: 'Gomez', ciudad: 'Bogota' },
       })
       .expect(201);
-    const usuarioId = registro.body.data.accessToken.replace('token-', '');
+    const usuarioId = registro.body.data.usuario.id;
+    const token = `Bearer ${registro.body.data.accessToken}`;
 
     await request(app.getHttpServer())
       .post(`/usuarios/${usuarioId}/favoritos`)
+      .set('Authorization', token)
       .send({ ofertaId: IDS_SEMILLA.ofertas.eafitSistemas })
       .expect(201)
       .expect((respuesta) => {
@@ -177,6 +238,7 @@ describe('API SAN (e2e)', () => {
 
     await request(app.getHttpServer())
       .get(`/usuarios/${usuarioId}/favoritos`)
+      .set('Authorization', token)
       .expect(200)
       .expect((respuesta) => {
         expect(respuesta.body).toContain(IDS_SEMILLA.ofertas.eafitSistemas);
@@ -186,6 +248,7 @@ describe('API SAN (e2e)', () => {
       .delete(
         `/usuarios/${usuarioId}/favoritos/${IDS_SEMILLA.ofertas.eafitSistemas}`,
       )
+      .set('Authorization', token)
       .expect(200);
   });
 

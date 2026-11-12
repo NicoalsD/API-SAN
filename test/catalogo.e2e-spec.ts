@@ -9,6 +9,16 @@ import { IDS_SEMILLA, sembrarBd } from './../src/common/semilla';
 
 describe('Catalogo (e2e)', () => {
   let app: INestApplication<App>;
+  let tokenAdmin: string;
+  let tokenEstudiante: string;
+
+  async function iniciarSesion(correo: string, clave: string) {
+    const respuesta = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ correo, clave })
+      .expect(201);
+    return respuesta.body.data.accessToken as string;
+  }
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -25,6 +35,8 @@ describe('Catalogo (e2e)', () => {
     );
     await app.init();
     await sembrarBd(app.get(DataSource));
+    tokenAdmin = await iniciarSesion('admin@correo.com', 'admin12345');
+    tokenEstudiante = await iniciarSesion('nicolas@correo.com', '12345678');
   });
 
   it('GET /carreras?nombre=sis encuentra Ingenieria de Sistemas', () => {
@@ -119,7 +131,19 @@ describe('Catalogo (e2e)', () => {
   });
 
   describe('CRUD', () => {
-    const http = () => request(app.getHttpServer());
+    const http = (token = tokenAdmin) => {
+      const servidor = request(app.getHttpServer());
+      return {
+        get: (ruta: string) =>
+          servidor.get(ruta).set('Authorization', `Bearer ${token}`),
+        post: (ruta: string) =>
+          servidor.post(ruta).set('Authorization', `Bearer ${token}`),
+        put: (ruta: string) =>
+          servidor.put(ruta).set('Authorization', `Bearer ${token}`),
+        delete: (ruta: string) =>
+          servidor.delete(ruta).set('Authorization', `Bearer ${token}`),
+      };
+    };
     const unico = () => randomUUID().slice(0, 8);
 
     async function crearCarrera() {
@@ -166,8 +190,36 @@ describe('Catalogo (e2e)', () => {
           perfil: { apellido: 'Gomez', ciudad: 'Bogota' },
         })
         .expect(201);
-      return respuesta.body.data.accessToken.replace('token-', '');
+      return {
+        id: respuesta.body.data.usuario.id as string,
+        token: respuesta.body.data.accessToken as string,
+      };
     }
+
+    it('responde 401 sin token y 403 a un estudiante en el CRUD', async () => {
+      const servidor = request(app.getHttpServer());
+      const idInexistente = randomUUID();
+      const cuerpo = { nombre: `Sin permiso ${unico()}` };
+
+      await servidor.post('/carreras').send(cuerpo).expect(401);
+      await servidor.put(`/carreras/${idInexistente}`).send(cuerpo).expect(401);
+      await servidor.delete(`/ofertas/${idInexistente}`).expect(401);
+      await servidor
+        .post('/universidades')
+        .set('Authorization', 'Bearer token-malo')
+        .send(cuerpo)
+        .expect(401);
+
+      await http(tokenEstudiante).post('/carreras').send(cuerpo).expect(403);
+      await http(tokenEstudiante)
+        .put(`/universidades/${idInexistente}`)
+        .send(cuerpo)
+        .expect(403);
+      await http(tokenEstudiante)
+        .delete(`/ofertas/${idInexistente}`)
+        .expect(403);
+      await servidor.get('/carreras').expect(200);
+    });
 
     it('crea, actualiza y elimina una carrera', async () => {
       const carrera = await crearCarrera();
@@ -272,10 +324,10 @@ describe('Catalogo (e2e)', () => {
       const universidad = await crearUniversidad();
       const ofertaA = await crearOferta(universidad.id, carrera.id);
       const ofertaB = await crearOferta(universidad.id, carrera.id);
-      const usuarioId = await registrarUsuario();
+      const usuario = await registrarUsuario();
 
-      await http()
-        .post(`/usuarios/${usuarioId}/favoritos`)
+      await http(usuario.token)
+        .post(`/usuarios/${usuario.id}/favoritos`)
         .send({ ofertaId: ofertaA.id })
         .expect(201);
       const comparacion = await http()
@@ -287,8 +339,8 @@ describe('Catalogo (e2e)', () => {
       await http().delete(`/ofertas/${mejorId}`).expect(200);
       const otraId = mejorId === ofertaA.id ? ofertaB.id : ofertaA.id;
       await http().delete(`/ofertas/${otraId}`).expect(200);
-      await http()
-        .get(`/usuarios/${usuarioId}/favoritos`)
+      await http(usuario.token)
+        .get(`/usuarios/${usuario.id}/favoritos`)
         .expect(200)
         .expect((respuesta) => {
           expect(respuesta.body).not.toContain(ofertaA.id);
@@ -303,9 +355,9 @@ describe('Catalogo (e2e)', () => {
       const universidad = await crearUniversidad();
       const oferta = await crearOferta(universidad.id, carrera.id);
       const otra = await crearOferta(universidad.id, carrera.id);
-      const usuarioId = await registrarUsuario();
-      await http()
-        .post(`/usuarios/${usuarioId}/favoritos`)
+      const usuario = await registrarUsuario();
+      await http(usuario.token)
+        .post(`/usuarios/${usuario.id}/favoritos`)
         .send({ ofertaId: oferta.id })
         .expect(201);
       await http()
@@ -320,8 +372,8 @@ describe('Catalogo (e2e)', () => {
       const universidad2 = await crearUniversidad();
       const oferta2 = await crearOferta(universidad2.id, carrera2.id);
       const otra2 = await crearOferta(universidad2.id, carrera2.id);
-      await http()
-        .post(`/usuarios/${usuarioId}/favoritos`)
+      await http(usuario.token)
+        .post(`/usuarios/${usuario.id}/favoritos`)
         .send({ ofertaId: oferta2.id })
         .expect(201);
       await http()
