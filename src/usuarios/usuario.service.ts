@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import bcrypt from 'bcrypt';
 import { Repository } from 'typeorm';
 import { OfertaAcademica } from '../catalogo/oferta-academica.entity';
 import {
@@ -56,8 +57,12 @@ export class UsuarioService {
       );
     }
 
+    const datos =
+      cambios.clave === undefined
+        ? cambios
+        : { ...cambios, clave: await bcrypt.hash(cambios.clave, 10) };
     const actualizado = await this.usuarioRepository.save(
-      this.usuarioRepository.merge(usuario, cambios),
+      this.usuarioRepository.merge(usuario, datos),
     );
 
     return {

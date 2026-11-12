@@ -3,17 +3,30 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
-import { isUUID } from 'class-validator';
+import bcrypt from 'bcrypt';
 import { Repository } from 'typeorm';
+import { Env } from '../env.model';
 import { Usuario } from '../usuarios/usuario.entity';
-import { AuthResponseDto, LoginDto, RegistroDto } from './auth.dto';
+import {
+  AuthResponseDto,
+  LoginDto,
+  PayloadAccesoJwt,
+  PayloadRefreshJwt,
+  RegistroDto,
+} from './auth.dto';
+
+const RONDAS_HASH = 10;
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectRepository(Usuario)
     private readonly usuarioRepository: Repository<Usuario>,
+    private readonly jwtService: JwtService,
+    private readonly configService: ConfigService<Env>,
   ) {}
 
   async registrar(datos: RegistroDto) {
@@ -27,12 +40,15 @@ export class AuthService {
     }
 
     const nuevoUsuario = await this.usuarioRepository.save(
-      this.usuarioRepository.create(datos),
+      this.usuarioRepository.create({
+        ...datos,
+        clave: await bcrypt.hash(datos.clave, RONDAS_HASH),
+      }),
     );
 
     return {
       message: 'Usuario registrado correctamente',
-      data: this.generarTokens(nuevoUsuario),
+      data: await this.generarTokens(nuevoUsuario),
     };
   }
 
@@ -40,37 +56,63 @@ export class AuthService {
     const usuario = await this.usuarioRepository.findOneBy({
       correo: datos.correo,
     });
-    if (usuario === null || usuario.clave !== datos.clave) {
+    if (
+      usuario === null ||
+      !(await bcrypt.compare(datos.clave, usuario.clave))
+    ) {
       throw new UnauthorizedException('Correo o clave incorrectos');
     }
 
     return {
       message: 'Ingreso exitoso',
-      data: this.generarTokens(usuario),
+      data: await this.generarTokens(usuario),
     };
   }
 
   async refresh(refreshToken: string) {
-    const id = refreshToken.replace('refresh-', '');
-    if (!isUUID(id)) {
+    let payload: PayloadRefreshJwt;
+    try {
+      payload = await this.jwtService.verifyAsync<PayloadRefreshJwt>(
+        refreshToken,
+        { secret: this.configService.getOrThrow('JWT_REFRESH_SECRET') },
+      );
+    } catch {
       throw new UnauthorizedException('Refresh token invalido');
     }
 
-    const usuario = await this.usuarioRepository.findOneBy({ id });
+    const usuario = await this.usuarioRepository.findOneBy({
+      id: payload.sub,
+    });
     if (usuario === null) {
       throw new UnauthorizedException('Refresh token invalido');
     }
 
     return {
       message: 'Token renovado',
-      data: this.generarTokens(usuario),
+      data: await this.generarTokens(usuario),
     };
   }
 
-  private generarTokens(usuario: Usuario): AuthResponseDto {
+  private async generarTokens(usuario: Usuario): Promise<AuthResponseDto> {
+    const payloadAcceso: PayloadAccesoJwt = {
+      sub: usuario.id,
+      correo: usuario.correo,
+      rol: usuario.rol,
+    };
+    const payloadRefresh: PayloadRefreshJwt = { sub: usuario.id };
+
     return {
-      accessToken: `token-${usuario.id}`,
-      refreshToken: `refresh-${usuario.id}`,
+      accessToken: await this.jwtService.signAsync(payloadAcceso),
+      refreshToken: await this.jwtService.signAsync(payloadRefresh, {
+        secret: this.configService.getOrThrow('JWT_REFRESH_SECRET'),
+        expiresIn: this.configService.getOrThrow('JWT_REFRESH_EXPIRES_IN'),
+      }),
+      usuario: {
+        id: usuario.id,
+        nombre: usuario.nombre,
+        correo: usuario.correo,
+        rol: usuario.rol,
+      },
     };
   }
 }

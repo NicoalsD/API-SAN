@@ -3,8 +3,12 @@
   "rootDir": ".",
   "testEnvironment": "node",
   "testRegex": ".e2e-spec.ts$",
+  "maxWorkers": 1,
   "extensionsToTreatAsEsm": [".ts"],
   "transform": {
-    "^.+\\.(t|j)s$": ["ts-jest", { "useESM": true, "tsconfig": "tsconfig.spec.json" }]
+    "^.+\\.(t|j)s$": [
+      "ts-jest",
+      { "useESM": true, "tsconfig": "tsconfig.spec.json" }
+    ]
   }
 }

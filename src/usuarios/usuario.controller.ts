@@ -7,7 +7,10 @@ import {
   ParseUUIDPipe,
   Post,
   Put,
+  UseGuards,
 } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { PropietarioGuard } from '../auth/propietario.guard';
 import {
   ActualizarUsuarioDto,
   FavoritoDto,
@@ -16,6 +19,7 @@ import {
 import { UsuarioService } from './usuario.service';
 
 @Controller('usuarios')
+@UseGuards(JwtAuthGuard, PropietarioGuard)
 export class UsuarioController {
   constructor(private readonly usuarioService: UsuarioService) {}
 

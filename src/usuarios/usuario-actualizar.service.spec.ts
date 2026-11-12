@@ -120,4 +120,14 @@ describe('UsuarioService (obtener y actualizar)', () => {
       expect.objectContaining({ message: 'Usuario actualizado correctamente' }),
     );
   });
+
+  it('hashea la clave nueva al actualizar', async () => {
+    const resultado = await service.actualizar(usuario.id, {
+      clave: 'nueva-clave-123',
+    });
+
+    expect(usuario.clave).not.toBe('nueva-clave-123');
+    expect(usuario.clave.startsWith('$2')).toBe(true);
+    expect(resultado.data).not.toHaveProperty('clave');
+  });
 });

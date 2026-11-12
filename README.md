@@ -19,7 +19,7 @@ npm install
 cp .env.example .env
 ```
 
-El `.env` contiene `PORT`, las variables `POSTGRES_*` y las de pgAdmin (`PGADMIN_EMAIL`, `PGADMIN_PASSWORD`, `PGADMIN_PORT`). La app no arranca si falta alguna variable de PostgreSQL, porque se leen con `getOrThrow`. El `.env` no se commitea.
+El `.env` contiene `PORT`, `CORS_ORIGIN`, las variables JWT (`JWT_SECRET`, `JWT_REFRESH_SECRET`, `JWT_EXPIRES_IN`, `JWT_REFRESH_EXPIRES_IN`), las variables `POSTGRES_*` y las de pgAdmin (`PGADMIN_EMAIL`, `PGADMIN_PASSWORD`, `PGADMIN_PORT`). La app no arranca si falta alguna variable de PostgreSQL o JWT, porque se leen con `getOrThrow`. El `.env` no se commitea.
 
 ## Base de datos
 
@@ -37,7 +37,7 @@ El `.env` contiene `PORT`, las variables `POSTGRES_*` y las de pgAdmin (`PGADMIN
    npm run seed
    ```
 
-   Carga carreras, universidades, ofertas y un usuario demo (`nicolas@correo.com` / `123456`). Es idempotente: se puede correr varias veces sin duplicar datos. Las tablas se crean solas porque TypeORM usa `synchronize: true`; todavia no hay migraciones.
+   Carga carreras, universidades, ofertas y un usuario demo (`nicolas@correo.com` / `12345678`, rol estudiante) y un admin demo (`admin@correo.com` / `admin12345`, rol admin). Es idempotente: se puede correr varias veces sin duplicar datos. Las tablas se crean solas porque TypeORM usa `synchronize: true`; todavia no hay migraciones.
 
 ## Ejecutar la API
 
@@ -106,7 +106,7 @@ api-san/
 │   ├── seed.ts                 # entrada de npm run seed
 │   ├── common/
 │   │   └── semilla.ts          # datos iniciales (idempotentes)
-│   ├── auth/                   # registro, login y refresh
+│   ├── auth/                   # registro, login, refresh, guards JWT y roles
 │   ├── usuarios/               # preferencias y favoritos
 │   ├── busquedas/              # busqueda y scoring.service.ts
 │   ├── catalogo/               # carreras, universidades y ofertas
@@ -126,5 +126,7 @@ Dentro de cada carpeta de recurso:
 
 ## Alcance actual
 
-- Los services usan repositorios de TypeORM. No hay JWT ni hash de claves todavia: los tokens son provisionales (`token-<id>` y `refresh-<id>`) y ningun endpoint exige autenticacion.
+- Los services usan repositorios de TypeORM.
+- Autenticacion con JWT (`@nestjs/jwt`, sin passport) y claves con bcrypt. `accessToken` (15m) y `refreshToken` (7d) se firman con secretos distintos. Roles: `estudiante` y `admin`.
+- Protegido: todo `/usuarios/{id}...` (solo el propio usuario o un admin) y `POST`/`PUT`/`DELETE` del catalogo (solo admin). Publicos: `/auth`, `/busquedas`, `/comparaciones` y las lecturas del catalogo. Detalle en `docs/api.md`.
 - No hay Prisma, Redis ni integracion con SNIES. Ver `AGENTS.md`.
