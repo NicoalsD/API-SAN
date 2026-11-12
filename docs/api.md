@@ -20,7 +20,7 @@ Base URL: `http://localhost:3000` (o el valor de `PORT`). No hay prefijo global:
   ```
 
 - **Forma de la respuesta**: algunos endpoints devuelven `{ "message", "data" }` y otros el recurso directamente. Cada seccion lo indica.
-- **Autenticacion**: ningun endpoint exige token todavia. Los tokens son provisionales (`token-<id>` y `refresh-<id>`), no JWT.
+- **Autenticacion**: JWT con el header `Authorization: Bearer <accessToken>`. Ver la seccion [Autenticacion y roles](#autenticacion-y-roles). Sin token o con token invalido responde 401; sin permiso responde 403.
 - **Escrituras del catalogo**: `POST`, `PUT` y `DELETE` de carreras, universidades y ofertas devuelven `{ "message", "data" }` (el `DELETE` solo `message`). Las lecturas siguen devolviendo el recurso directo.
 
 ### Endpoints
@@ -61,11 +61,12 @@ Base URL: `http://localhost:3000` (o el valor de `PORT`). No hay prefijo global:
 
 ### Datos de ejemplo (seed)
 
-Los ejemplos de este documento usan los datos de `npm run seed`. Usuario demo: `nicolas@correo.com` / `123456`.
+Los ejemplos de este documento usan los datos de `npm run seed`. Usuario demo (estudiante): `nicolas@correo.com` / `12345678`. Admin demo: `admin@correo.com` / `admin12345`.
 
 | Entidad | Nombre | ID |
 |---|---|---|
 | Usuario demo | nicolas@correo.com | `00000000-0000-4000-8000-000000000001` |
+| Admin demo | admin@correo.com | `00000000-0000-4000-8000-000000000002` |
 | Carrera | Ingenieria de Sistemas | `00000000-0000-4000-8000-000000000011` |
 | Carrera | Derecho | `00000000-0000-4000-8000-000000000012` |
 | Carrera | Medicina | `00000000-0000-4000-8000-000000000013` |
@@ -79,6 +80,45 @@ Los ejemplos de este documento usan los datos de `npm run seed`. Usuario demo: `
 | Oferta | Javeriana - Derecho | `00000000-0000-4000-8000-000000000103` |
 | Oferta | Antioquia - Medicina | `00000000-0000-4000-8000-000000000104` |
 | Oferta | EAFIT - Ingenieria de Sistemas | `00000000-0000-4000-8000-000000000105` |
+
+---
+
+## Autenticacion y roles
+
+- `accessToken`: JWT con payload `{ sub, correo, rol }`, firmado con `JWT_SECRET` y valido `JWT_EXPIRES_IN` (por defecto `15m`). Se envia en `Authorization: Bearer <accessToken>`.
+- `refreshToken`: JWT con payload `{ sub }`, firmado con `JWT_REFRESH_SECRET` y valido `JWT_REFRESH_EXPIRES_IN` (por defecto `7d`). Solo sirve en `POST /auth/refresh`.
+- Roles: `estudiante` (por defecto en el registro) y `admin`. El registro nunca asigna `admin`.
+- Las claves se guardan con hash (bcrypt) y nunca se devuelven.
+
+| Endpoints | Acceso |
+|---|---|
+| `/auth/*`, `/busquedas*`, `/comparaciones*`, `GET` del catalogo | Publicos |
+| `/usuarios/{id}...` (todos) | Token valido. Solo el propio usuario (`sub === id`) o un `admin`; si no, 403 |
+| `POST`, `PUT`, `DELETE` de `/carreras`, `/universidades` y `/ofertas` | Token valido con rol `admin`; un estudiante recibe 403 |
+
+Errores de acceso (formato estandar de NestJS):
+
+| Codigo | Mensaje |
+|---|---|
+| 401 | `Token de acceso requerido` (sin header o esquema distinto de Bearer) |
+| 401 | `Token de acceso invalido o expirado` |
+| 403 | `No tienes permisos para esta accion` (rol insuficiente en el catalogo) |
+| 403 | `No puedes acceder a los datos de otro usuario` |
+
+Forma de `data` en registro, login y refresh (`AuthResponseDto`):
+
+```json
+{
+  "accessToken": "<jwt>",
+  "refreshToken": "<jwt>",
+  "usuario": {
+    "id": "00000000-0000-4000-8000-000000000001",
+    "nombre": "Nicolas",
+    "correo": "nicolas@correo.com",
+    "rol": "estudiante"
+  }
+}
+```
 
 ---
 
@@ -106,8 +146,9 @@ Registra un usuario nuevo junto con su perfil (relacion 1:1 guardada en cascada)
 {
   "message": "Usuario registrado correctamente",
   "data": {
-    "accessToken": "token-7c1e9a52-3b8d-4f2e-9a61-2d5c8e4b1f70",
-    "refreshToken": "refresh-7c1e9a52-3b8d-4f2e-9a61-2d5c8e4b1f70"
+    "accessToken": "<jwt>",
+    "refreshToken": "<jwt>",
+    "usuario": { "id": "7c1e9a52-3b8d-4f2e-9a61-2d5c8e4b1f70", "nombre": "Ana", "correo": "ana@correo.com", "rol": "estudiante" }
   }
 }
 ```
@@ -119,7 +160,7 @@ Registra un usuario nuevo junto con su perfil (relacion 1:1 guardada en cascada)
 | 400 | Campos faltantes, formato invalido o campos no declarados |
 | 409 | `El correo <correo> ya esta registrado` |
 
-Nota: la clave se guarda sin hash en esta etapa (BCrypt esta fuera del alcance actual).
+Nota: la clave se guarda con hash bcrypt (10 rondas). El usuario siempre se crea con rol `estudiante`; enviar `rol` responde 400.
 
 **Ejemplo**
 
@@ -146,8 +187,9 @@ Inicia sesion con correo y clave.
 {
   "message": "Ingreso exitoso",
   "data": {
-    "accessToken": "token-00000000-0000-4000-8000-000000000001",
-    "refreshToken": "refresh-00000000-0000-4000-8000-000000000001"
+    "accessToken": "<jwt>",
+    "refreshToken": "<jwt>",
+    "usuario": { "id": "00000000-0000-4000-8000-000000000001", "nombre": "Nicolas", "correo": "nicolas@correo.com", "rol": "estudiante" }
   }
 }
 ```
@@ -157,19 +199,19 @@ Inicia sesion con correo y clave.
 | Codigo | Motivo |
 |---|---|
 | 400 | Campos faltantes o formato invalido |
-| 401 | `Correo o clave incorrectos` |
+| 401 | `Correo o clave incorrectos` (la clave se compara con bcrypt) |
 
 **Ejemplo**
 
 ```bash
 curl -X POST http://localhost:3000/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"correo":"nicolas@correo.com","clave":"123456"}'
+  -d '{"correo":"nicolas@correo.com","clave":"12345678"}'
 ```
 
 ### POST /auth/refresh
 
-Renueva los tokens. El `refreshToken` debe tener la forma `refresh-<uuid>`: el servicio quita el prefijo `refresh-` y valida que el resto sea un UUID.
+Renueva los tokens. El `refreshToken` debe ser un JWT de refresh vigente (firmado con `JWT_REFRESH_SECRET`); un access token no sirve. Se vuelve a consultar al usuario, asi que el nuevo `accessToken` lleva el rol actual.
 
 **Body** (`RefreshDto`)
 
@@ -183,8 +225,9 @@ Renueva los tokens. El `refreshToken` debe tener la forma `refresh-<uuid>`: el s
 {
   "message": "Token renovado",
   "data": {
-    "accessToken": "token-00000000-0000-4000-8000-000000000001",
-    "refreshToken": "refresh-00000000-0000-4000-8000-000000000001"
+    "accessToken": "<jwt>",
+    "refreshToken": "<jwt>",
+    "usuario": { "id": "00000000-0000-4000-8000-000000000001", "nombre": "Nicolas", "correo": "nicolas@correo.com", "rol": "estudiante" }
   }
 }
 ```
@@ -194,7 +237,7 @@ Renueva los tokens. El `refreshToken` debe tener la forma `refresh-<uuid>`: el s
 | Codigo | Motivo |
 |---|---|
 | 400 | `refreshToken` faltante o vacio |
-| 401 | `Refresh token invalido` (formato incorrecto o usuario inexistente) |
+| 401 | `Refresh token invalido` (firma incorrecta, expirado, malformado o usuario inexistente) |
 
 **Ejemplo**
 
@@ -208,7 +251,9 @@ curl -X POST http://localhost:3000/auth/refresh \
 
 ## Usuarios
 
-Todos los endpoints de este grupo reciben `:id` (UUID del usuario). Si el usuario no existe, responden 404 con `Usuario con ID <id> no existe`.
+Todos los endpoints de este grupo reciben `:id` (UUID del usuario). Requieren `Authorization: Bearer <accessToken>` y que `sub === id` (o rol `admin`): sin token responden 401 y con el token de otro usuario 403. Si el usuario no existe, responden 404 con `Usuario con ID <id> no existe`.
+
+En los ejemplos `curl` de este grupo, agregar `-H "Authorization: Bearer $TOKEN"`.
 
 ### GET /usuarios/{id}
 
@@ -714,7 +759,7 @@ curl -X DELETE http://localhost:3000/comparaciones/<id-comparacion>
 
 ## Catalogo
 
-Las lecturas (`GET`) devuelven los datos directamente (sin `message` ni `data`) y no hay paginacion. Las escrituras (`POST`, `PUT`, `DELETE`) devuelven `{ "message", "data" }`.
+Las lecturas (`GET`) son publicas, devuelven los datos directamente (sin `message` ni `data`) y no hay paginacion. Las escrituras (`POST`, `PUT`, `DELETE`) exigen `Authorization: Bearer <accessToken>` de un usuario con rol `admin` (401 sin token, 403 para un estudiante) y devuelven `{ "message", "data" }`.
 
 ### GET /carreras
 
@@ -922,12 +967,14 @@ curl "http://localhost:3000/ofertas?carreraId=00000000-0000-4000-8000-0000000000
 | Codigo | Motivo |
 |---|---|
 | 400 | Body invalido |
+| 401 / 403 | Sin token / rol distinto de `admin` |
 | 409 | `La carrera <nombre> ya existe` |
 
 **Ejemplo**
 
 ```bash
-curl -X POST http://localhost:3000/carreras -H "Content-Type: application/json" -d '{"nombre":"Fisica"}'
+curl -X POST http://localhost:3000/carreras -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN_ADMIN" -d '{"nombre":"Fisica"}'
 ```
 
 ### PUT /carreras/{id}
