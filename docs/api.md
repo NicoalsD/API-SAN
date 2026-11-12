@@ -2,6 +2,8 @@
 
 Base URL: `http://localhost:3000` (o el valor de `PORT`). No hay prefijo global: las rutas cuelgan de la raiz (`/carreras`, `/busquedas`, etc.). Los cuerpos son JSON (`Content-Type: application/json`).
 
+La documentacion interactiva (Swagger UI) esta en http://localhost:3000/docs y el esquema OpenAPI en JSON en http://localhost:3000/docs-json. Los endpoints protegidos usan `Authorization: Bearer <accessToken>` (boton "Authorize" en Swagger).
+
 ## Convenciones
 
 - **Validacion**: `ValidationPipe` global con `whitelist`, `forbidNonWhitelisted` y `transform`. Un campo del body o de la query que no este declarado en el DTO responde 400. Query y params se convierten a su tipo.
@@ -20,7 +22,8 @@ Base URL: `http://localhost:3000` (o el valor de `PORT`). No hay prefijo global:
   ```
 
 - **Forma de la respuesta**: algunos endpoints devuelven `{ "message", "data" }` y otros el recurso directamente. Cada seccion lo indica.
-- **Autenticacion**: ningun endpoint exige token todavia. Los tokens son provisionales (`token-<id>` y `refresh-<id>`), no JWT.
+- **Autenticacion**: JWT con el header `Authorization: Bearer <accessToken>`. Ver la seccion [Autenticacion y roles](#autenticacion-y-roles). Sin token o con token invalido responde 401; sin permiso responde 403.
+- **Escrituras del catalogo**: `POST`, `PUT` y `DELETE` de carreras, universidades y ofertas devuelven `{ "message", "data" }` (el `DELETE` solo `message`). Las lecturas siguen devolviendo el recurso directo.
 
 ### Endpoints
 
@@ -44,17 +47,28 @@ Base URL: `http://localhost:3000` (o el valor de `PORT`). No hay prefijo global:
 | Comparaciones | DELETE | `/comparaciones/{id}` | Elimina una comparacion |
 | Catalogo | GET | `/carreras` | Lista carreras (filtro `?nombre=`) |
 | Catalogo | GET | `/carreras/{id}` | Consulta una carrera |
+| Catalogo | POST | `/carreras` | Crea una carrera |
+| Catalogo | PUT | `/carreras/{id}` | Actualiza una carrera |
+| Catalogo | DELETE | `/carreras/{id}` | Elimina una carrera y sus ofertas |
 | Catalogo | GET | `/universidades` | Lista universidades (filtro `?ciudad=`) |
-| Catalogo | GET | `/universidades/{id}` | Consulta una universidad |
+| Catalogo | GET | `/universidades/{id}` | Consulta una universidad con sus ofertas |
+| Catalogo | POST | `/universidades` | Crea una universidad |
+| Catalogo | PUT | `/universidades/{id}` | Actualiza una universidad |
+| Catalogo | DELETE | `/universidades/{id}` | Elimina una universidad y sus ofertas |
+| Catalogo | GET | `/ofertas` | Lista ofertas (filtros `?carreraId=`, `?universidadId=`, `?ciudad=`) |
 | Catalogo | GET | `/ofertas/{id}` | Consulta una oferta academica |
+| Catalogo | POST | `/ofertas` | Crea una oferta academica |
+| Catalogo | PUT | `/ofertas/{id}` | Actualiza una oferta academica |
+| Catalogo | DELETE | `/ofertas/{id}` | Elimina una oferta academica |
 
 ### Datos de ejemplo (seed)
 
-Los ejemplos de este documento usan los datos de `npm run seed`. Usuario demo: `nicolas@correo.com` / `123456`.
+Los ejemplos de este documento usan los datos de `npm run seed`. Usuario demo (estudiante): `nicolas@correo.com` / `12345678`. Admin demo: `admin@correo.com` / `admin12345`.
 
 | Entidad | Nombre | ID |
 |---|---|---|
 | Usuario demo | nicolas@correo.com | `00000000-0000-4000-8000-000000000001` |
+| Admin demo | admin@correo.com | `00000000-0000-4000-8000-000000000002` |
 | Carrera | Ingenieria de Sistemas | `00000000-0000-4000-8000-000000000011` |
 | Carrera | Derecho | `00000000-0000-4000-8000-000000000012` |
 | Carrera | Medicina | `00000000-0000-4000-8000-000000000013` |
@@ -68,6 +82,45 @@ Los ejemplos de este documento usan los datos de `npm run seed`. Usuario demo: `
 | Oferta | Javeriana - Derecho | `00000000-0000-4000-8000-000000000103` |
 | Oferta | Antioquia - Medicina | `00000000-0000-4000-8000-000000000104` |
 | Oferta | EAFIT - Ingenieria de Sistemas | `00000000-0000-4000-8000-000000000105` |
+
+---
+
+## Autenticacion y roles
+
+- `accessToken`: JWT con payload `{ sub, correo, rol }`, firmado con `JWT_SECRET` y valido `JWT_EXPIRES_IN` (por defecto `15m`). Se envia en `Authorization: Bearer <accessToken>`.
+- `refreshToken`: JWT con payload `{ sub }`, firmado con `JWT_REFRESH_SECRET` y valido `JWT_REFRESH_EXPIRES_IN` (por defecto `7d`). Solo sirve en `POST /auth/refresh`.
+- Roles: `estudiante` (por defecto en el registro) y `admin`. El registro nunca asigna `admin`.
+- Las claves se guardan con hash (bcrypt) y nunca se devuelven.
+
+| Endpoints | Acceso |
+|---|---|
+| `/auth/*`, `/busquedas*`, `/comparaciones*`, `GET` del catalogo | Publicos |
+| `/usuarios/{id}...` (todos) | Token valido. Solo el propio usuario (`sub === id`) o un `admin`; si no, 403 |
+| `POST`, `PUT`, `DELETE` de `/carreras`, `/universidades` y `/ofertas` | Token valido con rol `admin`; un estudiante recibe 403 |
+
+Errores de acceso (formato estandar de NestJS):
+
+| Codigo | Mensaje |
+|---|---|
+| 401 | `Token de acceso requerido` (sin header o esquema distinto de Bearer) |
+| 401 | `Token de acceso invalido o expirado` |
+| 403 | `No tienes permisos para esta accion` (rol insuficiente en el catalogo) |
+| 403 | `No puedes acceder a los datos de otro usuario` |
+
+Forma de `data` en registro, login y refresh (`AuthResponseDto`):
+
+```json
+{
+  "accessToken": "<jwt>",
+  "refreshToken": "<jwt>",
+  "usuario": {
+    "id": "00000000-0000-4000-8000-000000000001",
+    "nombre": "Nicolas",
+    "correo": "nicolas@correo.com",
+    "rol": "estudiante"
+  }
+}
+```
 
 ---
 
@@ -95,8 +148,9 @@ Registra un usuario nuevo junto con su perfil (relacion 1:1 guardada en cascada)
 {
   "message": "Usuario registrado correctamente",
   "data": {
-    "accessToken": "token-7c1e9a52-3b8d-4f2e-9a61-2d5c8e4b1f70",
-    "refreshToken": "refresh-7c1e9a52-3b8d-4f2e-9a61-2d5c8e4b1f70"
+    "accessToken": "<jwt>",
+    "refreshToken": "<jwt>",
+    "usuario": { "id": "7c1e9a52-3b8d-4f2e-9a61-2d5c8e4b1f70", "nombre": "Ana", "correo": "ana@correo.com", "rol": "estudiante" }
   }
 }
 ```
@@ -108,7 +162,7 @@ Registra un usuario nuevo junto con su perfil (relacion 1:1 guardada en cascada)
 | 400 | Campos faltantes, formato invalido o campos no declarados |
 | 409 | `El correo <correo> ya esta registrado` |
 
-Nota: la clave se guarda sin hash en esta etapa (BCrypt esta fuera del alcance actual).
+Nota: la clave se guarda con hash bcrypt (10 rondas). El usuario siempre se crea con rol `estudiante`; enviar `rol` responde 400.
 
 **Ejemplo**
 
@@ -135,8 +189,9 @@ Inicia sesion con correo y clave.
 {
   "message": "Ingreso exitoso",
   "data": {
-    "accessToken": "token-00000000-0000-4000-8000-000000000001",
-    "refreshToken": "refresh-00000000-0000-4000-8000-000000000001"
+    "accessToken": "<jwt>",
+    "refreshToken": "<jwt>",
+    "usuario": { "id": "00000000-0000-4000-8000-000000000001", "nombre": "Nicolas", "correo": "nicolas@correo.com", "rol": "estudiante" }
   }
 }
 ```
@@ -146,19 +201,19 @@ Inicia sesion con correo y clave.
 | Codigo | Motivo |
 |---|---|
 | 400 | Campos faltantes o formato invalido |
-| 401 | `Correo o clave incorrectos` |
+| 401 | `Correo o clave incorrectos` (la clave se compara con bcrypt) |
 
 **Ejemplo**
 
 ```bash
 curl -X POST http://localhost:3000/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"correo":"nicolas@correo.com","clave":"123456"}'
+  -d '{"correo":"nicolas@correo.com","clave":"12345678"}'
 ```
 
 ### POST /auth/refresh
 
-Renueva los tokens. El `refreshToken` debe tener la forma `refresh-<uuid>`: el servicio quita el prefijo `refresh-` y valida que el resto sea un UUID.
+Renueva los tokens. El `refreshToken` debe ser un JWT de refresh vigente (firmado con `JWT_REFRESH_SECRET`); un access token no sirve. Se vuelve a consultar al usuario, asi que el nuevo `accessToken` lleva el rol actual.
 
 **Body** (`RefreshDto`)
 
@@ -172,8 +227,9 @@ Renueva los tokens. El `refreshToken` debe tener la forma `refresh-<uuid>`: el s
 {
   "message": "Token renovado",
   "data": {
-    "accessToken": "token-00000000-0000-4000-8000-000000000001",
-    "refreshToken": "refresh-00000000-0000-4000-8000-000000000001"
+    "accessToken": "<jwt>",
+    "refreshToken": "<jwt>",
+    "usuario": { "id": "00000000-0000-4000-8000-000000000001", "nombre": "Nicolas", "correo": "nicolas@correo.com", "rol": "estudiante" }
   }
 }
 ```
@@ -183,7 +239,7 @@ Renueva los tokens. El `refreshToken` debe tener la forma `refresh-<uuid>`: el s
 | Codigo | Motivo |
 |---|---|
 | 400 | `refreshToken` faltante o vacio |
-| 401 | `Refresh token invalido` (formato incorrecto o usuario inexistente) |
+| 401 | `Refresh token invalido` (firma incorrecta, expirado, malformado o usuario inexistente) |
 
 **Ejemplo**
 
@@ -197,7 +253,9 @@ curl -X POST http://localhost:3000/auth/refresh \
 
 ## Usuarios
 
-Todos los endpoints de este grupo reciben `:id` (UUID del usuario). Si el usuario no existe, responden 404 con `Usuario con ID <id> no existe`.
+Todos los endpoints de este grupo reciben `:id` (UUID del usuario). Requieren `Authorization: Bearer <accessToken>` y que `sub === id` (o rol `admin`): sin token responden 401 y con el token de otro usuario 403. Si el usuario no existe, responden 404 con `Usuario con ID <id> no existe`.
+
+En los ejemplos `curl` de este grupo, agregar `-H "Authorization: Bearer $TOKEN"`.
 
 ### GET /usuarios/{id}
 
@@ -454,8 +512,11 @@ Si la suma de los pesos es 0, el puntaje es 0.
       {
         "oferta": {
           "id": "00000000-0000-4000-8000-000000000101",
+          "universidadId": "00000000-0000-4000-8000-000000000021",
+          "carreraId": "00000000-0000-4000-8000-000000000011",
           "universidad": "Universidad Nacional de Colombia",
           "carrera": "Ingenieria de Sistemas",
+          "imagenUrl": "/campus/nacional.webp",
           "ciudad": "Bogota",
           "costo": 4500000,
           "modalidad": "presencial",
@@ -470,8 +531,11 @@ Si la suma de los pesos es 0, el puntaje es 0.
       {
         "oferta": {
           "id": "00000000-0000-4000-8000-000000000102",
+          "universidadId": "00000000-0000-4000-8000-000000000022",
+          "carreraId": "00000000-0000-4000-8000-000000000011",
           "universidad": "Universidad de los Andes",
           "carrera": "Ingenieria de Sistemas",
+          "imagenUrl": "/campus/andes.webp",
           "ciudad": "Bogota",
           "costo": 22000000,
           "modalidad": "presencial",
@@ -486,8 +550,11 @@ Si la suma de los pesos es 0, el puntaje es 0.
       {
         "oferta": {
           "id": "00000000-0000-4000-8000-000000000105",
+          "universidadId": "00000000-0000-4000-8000-000000000025",
+          "carreraId": "00000000-0000-4000-8000-000000000011",
           "universidad": "Universidad EAFIT",
           "carrera": "Ingenieria de Sistemas",
+          "imagenUrl": "/campus/eafit.webp",
           "ciudad": "Medellin",
           "costo": 18000000,
           "modalidad": "virtual",
@@ -694,7 +761,7 @@ curl -X DELETE http://localhost:3000/comparaciones/<id-comparacion>
 
 ## Catalogo
 
-Estos endpoints son de solo lectura. Devuelven los datos directamente (sin `message` ni `data`). No hay paginacion.
+Las lecturas (`GET`) son publicas, devuelven los datos directamente (sin `message` ni `data`) y no hay paginacion. Las escrituras (`POST`, `PUT`, `DELETE`) exigen `Authorization: Bearer <accessToken>` de un usuario con rol `admin` (401 sin token, 403 para un estudiante) y devuelven `{ "message", "data" }`.
 
 ### GET /carreras
 
@@ -761,8 +828,8 @@ Lista las universidades ordenadas por nombre.
 
 ```json
 [
-  { "id": "00000000-0000-4000-8000-000000000024", "nombre": "Universidad de Antioquia", "ciudad": "Medellin" },
-  { "id": "00000000-0000-4000-8000-000000000025", "nombre": "Universidad EAFIT", "ciudad": "Medellin" }
+  { "id": "00000000-0000-4000-8000-000000000024", "nombre": "Universidad de Antioquia", "ciudad": "Medellin", "imagenUrl": "/campus/antioquia.webp" },
+  { "id": "00000000-0000-4000-8000-000000000025", "nombre": "Universidad EAFIT", "ciudad": "Medellin", "imagenUrl": "/campus/eafit.webp" }
 ]
 ```
 
@@ -783,7 +850,29 @@ curl "http://localhost:3000/universidades?ciudad=Medellin"
 **Respuesta 200**
 
 ```json
-{ "id": "00000000-0000-4000-8000-000000000021", "nombre": "Universidad Nacional de Colombia", "ciudad": "Bogota" }
+{
+  "id": "00000000-0000-4000-8000-000000000021",
+  "nombre": "Universidad Nacional de Colombia",
+  "ciudad": "Bogota",
+  "imagenUrl": "/campus/nacional.webp",
+  "ofertas": [
+    {
+      "id": "00000000-0000-4000-8000-000000000101",
+      "universidadId": "00000000-0000-4000-8000-000000000021",
+      "carreraId": "00000000-0000-4000-8000-000000000011",
+      "universidad": "Universidad Nacional de Colombia",
+      "carrera": "Ingenieria de Sistemas",
+      "imagenUrl": "/campus/nacional.webp",
+      "ciudad": "Bogota",
+      "costo": 4500000,
+      "modalidad": "presencial",
+      "jornada": "diurna",
+      "duracion": 10,
+      "acreditacion": true,
+      "snies": "1001"
+    }
+  ]
+}
 ```
 
 **Errores**
@@ -806,8 +895,11 @@ curl http://localhost:3000/universidades/00000000-0000-4000-8000-000000000021
 ```json
 {
   "id": "00000000-0000-4000-8000-000000000105",
+  "universidadId": "00000000-0000-4000-8000-000000000025",
+  "carreraId": "00000000-0000-4000-8000-000000000011",
   "universidad": "Universidad EAFIT",
   "carrera": "Ingenieria de Sistemas",
+  "imagenUrl": "/campus/eafit.webp",
   "ciudad": "Medellin",
   "costo": 18000000,
   "modalidad": "virtual",
@@ -830,3 +922,162 @@ curl http://localhost:3000/universidades/00000000-0000-4000-8000-000000000021
 ```bash
 curl http://localhost:3000/ofertas/00000000-0000-4000-8000-000000000105
 ```
+
+### GET /ofertas
+
+Lista las ofertas ordenadas por SNIES. Devuelve un arreglo de objetos con la misma forma que `GET /ofertas/{id}`.
+
+**Query** (todos opcionales y combinables)
+
+| Parametro | Tipo | Reglas |
+|---|---|---|
+| `carreraId` | UUID | Solo ofertas de esa carrera |
+| `universidadId` | UUID | Solo ofertas de esa universidad |
+| `ciudad` | string | Coincidencia exacta sin distinguir mayusculas |
+
+**Errores**
+
+| Codigo | Motivo |
+|---|---|
+| 400 | UUID invalido, `?ciudad=` vacio o parametro no declarado |
+
+**Ejemplo**
+
+```bash
+curl "http://localhost:3000/ofertas?carreraId=00000000-0000-4000-8000-000000000011&ciudad=Bogota"
+```
+
+### POST /carreras
+
+**Body**
+
+| Campo | Tipo | Reglas |
+|---|---|---|
+| `nombre` | string | Obligatorio, no vacio, maximo 150 caracteres, unico |
+
+**Respuesta 201**
+
+```json
+{
+  "message": "Carrera creada correctamente",
+  "data": { "id": "6f1d2c3e-1a2b-4c5d-8e9f-0a1b2c3d4e5f", "nombre": "Fisica" }
+}
+```
+
+**Errores**
+
+| Codigo | Motivo |
+|---|---|
+| 400 | Body invalido |
+| 401 / 403 | Sin token / rol distinto de `admin` |
+| 409 | `La carrera <nombre> ya existe` |
+
+**Ejemplo**
+
+```bash
+curl -X POST http://localhost:3000/carreras -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN_ADMIN" -d '{"nombre":"Fisica"}'
+```
+
+### PUT /carreras/{id}
+
+Body igual al de `POST /carreras`, con todos los campos opcionales (`PartialType`). Responde 200 con `{ "message": "Carrera actualizada correctamente", "data": <carrera> }`.
+
+**Errores**: 400 (`id` no UUID o body invalido), 404 (`Carrera con ID <id> no existe`), 409 (nombre ya existe).
+
+### DELETE /carreras/{id}
+
+Elimina la carrera. Sus ofertas se eliminan en cascada, y desaparecen de favoritos y comparaciones. Responde 200 con `{ "message": "Carrera eliminada correctamente" }`.
+
+**Errores**: 400 (`id` no UUID), 404.
+
+### POST /universidades
+
+**Body**
+
+| Campo | Tipo | Reglas |
+|---|---|---|
+| `nombre` | string | Obligatorio, maximo 150 caracteres, unico |
+| `ciudad` | string | Obligatorio, maximo 100 caracteres |
+| `imagenUrl` | string | Opcional, maximo 255 caracteres (por ejemplo `/campus/andes.webp`) |
+
+**Respuesta 201**
+
+```json
+{
+  "message": "Universidad creada correctamente",
+  "data": {
+    "id": "7a2e3d4f-2b3c-4d6e-9f0a-1b2c3d4e5f60",
+    "nombre": "Universidad Industrial de Santander",
+    "ciudad": "Bucaramanga",
+    "imagenUrl": "/campus/uis.webp"
+  }
+}
+```
+
+**Errores**: 400 (body invalido), 409 (`La universidad <nombre> ya existe`).
+
+### PUT /universidades/{id}
+
+Mismo body con todos los campos opcionales. Responde 200 con `{ "message": "Universidad actualizada correctamente", "data": <universidad> }`.
+
+**Errores**: 400, 404 (`Universidad con ID <id> no existe`), 409 (nombre ya existe).
+
+### DELETE /universidades/{id}
+
+Elimina la universidad y, en cascada, sus ofertas (tambien de favoritos y comparaciones). Responde 200 con `{ "message": "Universidad eliminada correctamente" }`.
+
+**Errores**: 400, 404.
+
+### POST /ofertas
+
+**Body**
+
+| Campo | Tipo | Reglas |
+|---|---|---|
+| `snies` | string | Obligatorio, unico, maximo 50 caracteres |
+| `ciudad` | string | Obligatorio, maximo 100 caracteres |
+| `costo` | entero | Obligatorio, `>= 0` |
+| `modalidad` | string | `presencial`, `virtual` o `hibrida` |
+| `jornada` | string | `diurna`, `nocturna` o `mixta` |
+| `duracion` | entero | Obligatorio, `>= 1` (semestres) |
+| `acreditacion` | boolean | Obligatorio |
+| `universidadId` | UUID | Debe existir |
+| `carreraId` | UUID | Debe existir |
+
+**Respuesta 201**
+
+```json
+{
+  "message": "Oferta creada correctamente",
+  "data": {
+    "id": "8b3f4e5a-3c4d-4e7f-a01b-2c3d4e5f6071",
+    "universidadId": "00000000-0000-4000-8000-000000000021",
+    "carreraId": "00000000-0000-4000-8000-000000000012",
+    "universidad": "Universidad Nacional de Colombia",
+    "carrera": "Derecho",
+    "imagenUrl": "/campus/nacional.webp",
+    "ciudad": "Bogota",
+    "costo": 5000000,
+    "modalidad": "presencial",
+    "jornada": "diurna",
+    "duracion": 10,
+    "acreditacion": true,
+    "snies": "2001"
+  }
+}
+```
+
+**Errores**: 400 (body invalido), 404 (`Universidad con ID <id> no existe` o `Carrera con ID <id> no existe`), 409 (`La oferta con SNIES <snies> ya existe`).
+
+### PUT /ofertas/{id}
+
+Mismo body con todos los campos opcionales; `universidadId` y `carreraId` se validan solo si se envian. Responde 200 con `{ "message": "Oferta actualizada correctamente", "data": <oferta> }`.
+
+**Errores**: 400, 404 (oferta, universidad o carrera), 409 (SNIES repetido).
+
+### DELETE /ofertas/{id}
+
+Elimina la oferta; se quita de favoritos y comparaciones (`mejorOferta` queda en `null`). Responde 200 con `{ "message": "Oferta eliminada correctamente" }`.
+
+**Errores**: 400, 404.

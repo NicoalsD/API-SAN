@@ -10,6 +10,7 @@ import {
   type Relation,
   UpdateDateColumn,
 } from 'typeorm';
+import type { Rol } from '../common/constantes';
 import { OfertaAcademica } from '../catalogo/oferta-academica.entity';
 import { Perfil } from './perfil.entity';
 import { PreferenciaDto } from './usuario.dto';
@@ -27,6 +28,9 @@ export class Usuario {
 
   @Column()
   clave: string;
+
+  @Column({ type: 'varchar', default: 'estudiante' })
+  rol: Rol;
 
   @Column('jsonb', {
     default: { costo: 3, modalidad: 3, ubicacion: 3, acreditacion: 3 },

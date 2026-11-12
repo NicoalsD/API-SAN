@@ -1,14 +1,17 @@
+import bcrypt from 'bcrypt';
 import { DataSource, Repository } from 'typeorm';
 import { Carrera } from '../catalogo/carrera.entity';
 import { OfertaAcademica } from '../catalogo/oferta-academica.entity';
 import { Universidad } from '../catalogo/universidad.entity';
 import { Usuario } from '../usuarios/usuario.entity';
+import { Rol } from './constantes';
 
 const uuid = (numero: number) =>
   `00000000-0000-4000-8000-${`${numero}`.padStart(12, '0')}`;
 
 export const IDS_SEMILLA = {
   usuario: uuid(1),
+  admin: uuid(2),
   carreras: {
     sistemas: uuid(11),
     derecho: uuid(12),
@@ -55,36 +58,43 @@ const UNIVERSIDADES = [
     id: IDS_SEMILLA.universidades.nacional,
     nombre: 'Universidad Nacional de Colombia',
     ciudad: 'Bogota',
+    imagenUrl: '/campus/nacional.webp',
   },
   {
     id: IDS_SEMILLA.universidades.andes,
     nombre: 'Universidad de los Andes',
     ciudad: 'Bogota',
+    imagenUrl: '/campus/andes.webp',
   },
   {
     id: IDS_SEMILLA.universidades.javeriana,
     nombre: 'Universidad Javeriana',
     ciudad: 'Bogota',
+    imagenUrl: '/campus/javeriana.webp',
   },
   {
     id: IDS_SEMILLA.universidades.antioquia,
     nombre: 'Universidad de Antioquia',
     ciudad: 'Medellin',
+    imagenUrl: '/campus/antioquia.webp',
   },
   {
     id: IDS_SEMILLA.universidades.eafit,
     nombre: 'Universidad EAFIT',
     ciudad: 'Medellin',
+    imagenUrl: '/campus/eafit.webp',
   },
   {
     id: IDS_SEMILLA.universidades.valle,
     nombre: 'Universidad del Valle',
     ciudad: 'Cali',
+    imagenUrl: '/campus/valle.webp',
   },
   {
     id: IDS_SEMILLA.universidades.norte,
     nombre: 'Universidad del Norte',
     ciudad: 'Barranquilla',
+    imagenUrl: '/campus/norte.webp',
   },
 ];
 
@@ -229,13 +239,20 @@ async function asegurarUniversidad(
   id: string,
   nombre: string,
   ciudad: string,
+  imagenUrl: string,
 ) {
   const existente = await repositorio.findOneBy({ nombre });
   if (existente !== null) {
+    if (existente.imagenUrl === null) {
+      existente.imagenUrl = imagenUrl;
+      return repositorio.save(existente);
+    }
     return existente;
   }
 
-  return repositorio.save(repositorio.create({ id, nombre, ciudad }));
+  return repositorio.save(
+    repositorio.create({ id, nombre, ciudad, imagenUrl }),
+  );
 }
 
 export async function sembrarBd(dataSource: DataSource) {
@@ -260,6 +277,7 @@ export async function sembrarBd(dataSource: DataSource) {
         universidad.id,
         universidad.nombre,
         universidad.ciudad,
+        universidad.imagenUrl,
       ),
     );
   }
@@ -294,17 +312,51 @@ export async function sembrarBd(dataSource: DataSource) {
   }
 
   const usuarios = dataSource.getRepository(Usuario);
-  const existente = await usuarios.findOneBy({ correo: 'nicolas@correo.com' });
+  await asegurarUsuario(usuarios, {
+    id: IDS_SEMILLA.usuario,
+    nombre: 'Nicolas',
+    correo: 'nicolas@correo.com',
+    clave: '12345678',
+    rol: 'estudiante',
+    perfil: { apellido: 'Diaz', ciudad: 'Bogota' },
+  });
+  await asegurarUsuario(usuarios, {
+    id: IDS_SEMILLA.admin,
+    nombre: 'Admin',
+    correo: 'admin@correo.com',
+    clave: 'admin12345',
+    rol: 'admin',
+    perfil: { apellido: 'SAN', ciudad: 'Bogota' },
+  });
+}
+
+async function asegurarUsuario(
+  repositorio: Repository<Usuario>,
+  datos: {
+    id: string;
+    nombre: string;
+    correo: string;
+    clave: string;
+    rol: Rol;
+    perfil: { apellido: string; ciudad: string };
+  },
+) {
+  const existente = await repositorio.findOneBy({ correo: datos.correo });
   if (existente === null) {
-    await usuarios.save(
-      usuarios.create({
-        id: IDS_SEMILLA.usuario,
-        nombre: 'Nicolas',
-        correo: 'nicolas@correo.com',
-        clave: '123456',
+    await repositorio.save(
+      repositorio.create({
+        ...datos,
+        clave: await bcrypt.hash(datos.clave, 10),
         preferencias: { costo: 3, modalidad: 3, ubicacion: 3, acreditacion: 3 },
-        perfil: { apellido: 'Diaz', ciudad: 'Bogota' },
       }),
     );
+    return;
   }
+
+  // Idempotencia: si la clave del demo quedo en texto plano, se hashea.
+  if (!existente.clave.startsWith('$2')) {
+    existente.clave = await bcrypt.hash(datos.clave, 10);
+  }
+  existente.rol = datos.rol;
+  await repositorio.save(existente);
 }

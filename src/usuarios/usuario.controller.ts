@@ -7,7 +7,11 @@ import {
   ParseUUIDPipe,
   Post,
   Put,
+  UseGuards,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { PropietarioGuard } from '../auth/propietario.guard';
 import {
   ActualizarUsuarioDto,
   FavoritoDto,
@@ -15,7 +19,10 @@ import {
 } from './usuario.dto';
 import { UsuarioService } from './usuario.service';
 
+@ApiTags('usuarios')
 @Controller('usuarios')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, PropietarioGuard)
 export class UsuarioController {
   constructor(private readonly usuarioService: UsuarioService) {}
 

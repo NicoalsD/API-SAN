@@ -14,6 +14,7 @@ const config: Config = {
   moduleFileExtensions: ['js', 'json', 'ts'],
   rootDir: '.',
   testRegex: '.*\\.spec\\.ts$',
+  testPathIgnorePatterns: ['/node_modules/', '/.claude/', '/frontend/'],
   extensionsToTreatAsEsm: ['.ts'],
   transform: {
     '^.+\\.(t|j)s$': ['ts-jest', { useESM: true, tsconfig: 'tsconfig.spec.json' }],
