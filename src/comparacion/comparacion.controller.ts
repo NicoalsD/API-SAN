@@ -7,9 +7,11 @@ import {
   ParseUUIDPipe,
   Post,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { ComparacionRequestDto } from './comparacion.dto';
 import { ComparacionService } from './comparacion.service';
 
+@ApiTags('comparaciones')
 @Controller('comparaciones')
 export class ComparacionController {
   constructor(private readonly comparacionService: ComparacionService) {}

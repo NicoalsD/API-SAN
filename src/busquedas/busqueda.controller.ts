@@ -6,9 +6,11 @@ import {
   ParseUUIDPipe,
   Post,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { BusquedaRequestDto } from './busqueda.dto';
 import { BusquedaService } from './busqueda.service';
 
+@ApiTags('busquedas')
 @Controller('busquedas')
 export class BusquedaController {
   constructor(private readonly busquedaService: BusquedaService) {}

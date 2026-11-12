@@ -10,6 +10,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
@@ -26,6 +27,7 @@ import {
 } from './catalogo.dto';
 import { CatalogoService } from './catalogo.service';
 
+@ApiTags('catalogo')
 @Controller()
 export class CatalogoController {
   constructor(private readonly catalogoService: CatalogoService) {}
@@ -41,6 +43,7 @@ export class CatalogoController {
   }
 
   @Post('carreras')
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   crearCarrera(@Body() datos: CrearCarreraDto) {
@@ -48,6 +51,7 @@ export class CatalogoController {
   }
 
   @Put('carreras/:id')
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   actualizarCarrera(
@@ -58,6 +62,7 @@ export class CatalogoController {
   }
 
   @Delete('carreras/:id')
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   eliminarCarrera(@Param('id', ParseUUIDPipe) id: string) {
@@ -75,6 +80,7 @@ export class CatalogoController {
   }
 
   @Post('universidades')
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   crearUniversidad(@Body() datos: CrearUniversidadDto) {
@@ -82,6 +88,7 @@ export class CatalogoController {
   }
 
   @Put('universidades/:id')
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   actualizarUniversidad(
@@ -92,6 +99,7 @@ export class CatalogoController {
   }
 
   @Delete('universidades/:id')
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   eliminarUniversidad(@Param('id', ParseUUIDPipe) id: string) {
@@ -109,6 +117,7 @@ export class CatalogoController {
   }
 
   @Post('ofertas')
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   crearOferta(@Body() datos: CrearOfertaDto) {
@@ -116,6 +125,7 @@ export class CatalogoController {
   }
 
   @Put('ofertas/:id')
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   actualizarOferta(
@@ -126,6 +136,7 @@ export class CatalogoController {
   }
 
   @Delete('ofertas/:id')
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   eliminarOferta(@Param('id', ParseUUIDPipe) id: string) {
