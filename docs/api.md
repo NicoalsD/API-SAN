@@ -21,6 +21,7 @@ Base URL: `http://localhost:3000` (o el valor de `PORT`). No hay prefijo global:
 
 - **Forma de la respuesta**: algunos endpoints devuelven `{ "message", "data" }` y otros el recurso directamente. Cada seccion lo indica.
 - **Autenticacion**: ningun endpoint exige token todavia. Los tokens son provisionales (`token-<id>` y `refresh-<id>`), no JWT.
+- **Escrituras del catalogo**: `POST`, `PUT` y `DELETE` de carreras, universidades y ofertas devuelven `{ "message", "data" }` (el `DELETE` solo `message`). Las lecturas siguen devolviendo el recurso directo.
 
 ### Endpoints
 
@@ -44,9 +45,19 @@ Base URL: `http://localhost:3000` (o el valor de `PORT`). No hay prefijo global:
 | Comparaciones | DELETE | `/comparaciones/{id}` | Elimina una comparacion |
 | Catalogo | GET | `/carreras` | Lista carreras (filtro `?nombre=`) |
 | Catalogo | GET | `/carreras/{id}` | Consulta una carrera |
+| Catalogo | POST | `/carreras` | Crea una carrera |
+| Catalogo | PUT | `/carreras/{id}` | Actualiza una carrera |
+| Catalogo | DELETE | `/carreras/{id}` | Elimina una carrera y sus ofertas |
 | Catalogo | GET | `/universidades` | Lista universidades (filtro `?ciudad=`) |
-| Catalogo | GET | `/universidades/{id}` | Consulta una universidad |
+| Catalogo | GET | `/universidades/{id}` | Consulta una universidad con sus ofertas |
+| Catalogo | POST | `/universidades` | Crea una universidad |
+| Catalogo | PUT | `/universidades/{id}` | Actualiza una universidad |
+| Catalogo | DELETE | `/universidades/{id}` | Elimina una universidad y sus ofertas |
+| Catalogo | GET | `/ofertas` | Lista ofertas (filtros `?carreraId=`, `?universidadId=`, `?ciudad=`) |
 | Catalogo | GET | `/ofertas/{id}` | Consulta una oferta academica |
+| Catalogo | POST | `/ofertas` | Crea una oferta academica |
+| Catalogo | PUT | `/ofertas/{id}` | Actualiza una oferta academica |
+| Catalogo | DELETE | `/ofertas/{id}` | Elimina una oferta academica |
 
 ### Datos de ejemplo (seed)
 
@@ -454,8 +465,11 @@ Si la suma de los pesos es 0, el puntaje es 0.
       {
         "oferta": {
           "id": "00000000-0000-4000-8000-000000000101",
+          "universidadId": "00000000-0000-4000-8000-000000000021",
+          "carreraId": "00000000-0000-4000-8000-000000000011",
           "universidad": "Universidad Nacional de Colombia",
           "carrera": "Ingenieria de Sistemas",
+          "imagenUrl": "/campus/nacional.webp",
           "ciudad": "Bogota",
           "costo": 4500000,
           "modalidad": "presencial",
@@ -470,8 +484,11 @@ Si la suma de los pesos es 0, el puntaje es 0.
       {
         "oferta": {
           "id": "00000000-0000-4000-8000-000000000102",
+          "universidadId": "00000000-0000-4000-8000-000000000022",
+          "carreraId": "00000000-0000-4000-8000-000000000011",
           "universidad": "Universidad de los Andes",
           "carrera": "Ingenieria de Sistemas",
+          "imagenUrl": "/campus/andes.webp",
           "ciudad": "Bogota",
           "costo": 22000000,
           "modalidad": "presencial",
@@ -486,8 +503,11 @@ Si la suma de los pesos es 0, el puntaje es 0.
       {
         "oferta": {
           "id": "00000000-0000-4000-8000-000000000105",
+          "universidadId": "00000000-0000-4000-8000-000000000025",
+          "carreraId": "00000000-0000-4000-8000-000000000011",
           "universidad": "Universidad EAFIT",
           "carrera": "Ingenieria de Sistemas",
+          "imagenUrl": "/campus/eafit.webp",
           "ciudad": "Medellin",
           "costo": 18000000,
           "modalidad": "virtual",
@@ -694,7 +714,7 @@ curl -X DELETE http://localhost:3000/comparaciones/<id-comparacion>
 
 ## Catalogo
 
-Estos endpoints son de solo lectura. Devuelven los datos directamente (sin `message` ni `data`). No hay paginacion.
+Las lecturas (`GET`) devuelven los datos directamente (sin `message` ni `data`) y no hay paginacion. Las escrituras (`POST`, `PUT`, `DELETE`) devuelven `{ "message", "data" }`.
 
 ### GET /carreras
 
@@ -761,8 +781,8 @@ Lista las universidades ordenadas por nombre.
 
 ```json
 [
-  { "id": "00000000-0000-4000-8000-000000000024", "nombre": "Universidad de Antioquia", "ciudad": "Medellin" },
-  { "id": "00000000-0000-4000-8000-000000000025", "nombre": "Universidad EAFIT", "ciudad": "Medellin" }
+  { "id": "00000000-0000-4000-8000-000000000024", "nombre": "Universidad de Antioquia", "ciudad": "Medellin", "imagenUrl": "/campus/antioquia.webp" },
+  { "id": "00000000-0000-4000-8000-000000000025", "nombre": "Universidad EAFIT", "ciudad": "Medellin", "imagenUrl": "/campus/eafit.webp" }
 ]
 ```
 
@@ -783,7 +803,29 @@ curl "http://localhost:3000/universidades?ciudad=Medellin"
 **Respuesta 200**
 
 ```json
-{ "id": "00000000-0000-4000-8000-000000000021", "nombre": "Universidad Nacional de Colombia", "ciudad": "Bogota" }
+{
+  "id": "00000000-0000-4000-8000-000000000021",
+  "nombre": "Universidad Nacional de Colombia",
+  "ciudad": "Bogota",
+  "imagenUrl": "/campus/nacional.webp",
+  "ofertas": [
+    {
+      "id": "00000000-0000-4000-8000-000000000101",
+      "universidadId": "00000000-0000-4000-8000-000000000021",
+      "carreraId": "00000000-0000-4000-8000-000000000011",
+      "universidad": "Universidad Nacional de Colombia",
+      "carrera": "Ingenieria de Sistemas",
+      "imagenUrl": "/campus/nacional.webp",
+      "ciudad": "Bogota",
+      "costo": 4500000,
+      "modalidad": "presencial",
+      "jornada": "diurna",
+      "duracion": 10,
+      "acreditacion": true,
+      "snies": "1001"
+    }
+  ]
+}
 ```
 
 **Errores**
@@ -806,8 +848,11 @@ curl http://localhost:3000/universidades/00000000-0000-4000-8000-000000000021
 ```json
 {
   "id": "00000000-0000-4000-8000-000000000105",
+  "universidadId": "00000000-0000-4000-8000-000000000025",
+  "carreraId": "00000000-0000-4000-8000-000000000011",
   "universidad": "Universidad EAFIT",
   "carrera": "Ingenieria de Sistemas",
+  "imagenUrl": "/campus/eafit.webp",
   "ciudad": "Medellin",
   "costo": 18000000,
   "modalidad": "virtual",
@@ -830,3 +875,160 @@ curl http://localhost:3000/universidades/00000000-0000-4000-8000-000000000021
 ```bash
 curl http://localhost:3000/ofertas/00000000-0000-4000-8000-000000000105
 ```
+
+### GET /ofertas
+
+Lista las ofertas ordenadas por SNIES. Devuelve un arreglo de objetos con la misma forma que `GET /ofertas/{id}`.
+
+**Query** (todos opcionales y combinables)
+
+| Parametro | Tipo | Reglas |
+|---|---|---|
+| `carreraId` | UUID | Solo ofertas de esa carrera |
+| `universidadId` | UUID | Solo ofertas de esa universidad |
+| `ciudad` | string | Coincidencia exacta sin distinguir mayusculas |
+
+**Errores**
+
+| Codigo | Motivo |
+|---|---|
+| 400 | UUID invalido, `?ciudad=` vacio o parametro no declarado |
+
+**Ejemplo**
+
+```bash
+curl "http://localhost:3000/ofertas?carreraId=00000000-0000-4000-8000-000000000011&ciudad=Bogota"
+```
+
+### POST /carreras
+
+**Body**
+
+| Campo | Tipo | Reglas |
+|---|---|---|
+| `nombre` | string | Obligatorio, no vacio, maximo 150 caracteres, unico |
+
+**Respuesta 201**
+
+```json
+{
+  "message": "Carrera creada correctamente",
+  "data": { "id": "6f1d2c3e-1a2b-4c5d-8e9f-0a1b2c3d4e5f", "nombre": "Fisica" }
+}
+```
+
+**Errores**
+
+| Codigo | Motivo |
+|---|---|
+| 400 | Body invalido |
+| 409 | `La carrera <nombre> ya existe` |
+
+**Ejemplo**
+
+```bash
+curl -X POST http://localhost:3000/carreras -H "Content-Type: application/json" -d '{"nombre":"Fisica"}'
+```
+
+### PUT /carreras/{id}
+
+Body igual al de `POST /carreras`, con todos los campos opcionales (`PartialType`). Responde 200 con `{ "message": "Carrera actualizada correctamente", "data": <carrera> }`.
+
+**Errores**: 400 (`id` no UUID o body invalido), 404 (`Carrera con ID <id> no existe`), 409 (nombre ya existe).
+
+### DELETE /carreras/{id}
+
+Elimina la carrera. Sus ofertas se eliminan en cascada, y desaparecen de favoritos y comparaciones. Responde 200 con `{ "message": "Carrera eliminada correctamente" }`.
+
+**Errores**: 400 (`id` no UUID), 404.
+
+### POST /universidades
+
+**Body**
+
+| Campo | Tipo | Reglas |
+|---|---|---|
+| `nombre` | string | Obligatorio, maximo 150 caracteres, unico |
+| `ciudad` | string | Obligatorio, maximo 100 caracteres |
+| `imagenUrl` | string | Opcional, maximo 255 caracteres (por ejemplo `/campus/andes.webp`) |
+
+**Respuesta 201**
+
+```json
+{
+  "message": "Universidad creada correctamente",
+  "data": {
+    "id": "7a2e3d4f-2b3c-4d6e-9f0a-1b2c3d4e5f60",
+    "nombre": "Universidad Industrial de Santander",
+    "ciudad": "Bucaramanga",
+    "imagenUrl": "/campus/uis.webp"
+  }
+}
+```
+
+**Errores**: 400 (body invalido), 409 (`La universidad <nombre> ya existe`).
+
+### PUT /universidades/{id}
+
+Mismo body con todos los campos opcionales. Responde 200 con `{ "message": "Universidad actualizada correctamente", "data": <universidad> }`.
+
+**Errores**: 400, 404 (`Universidad con ID <id> no existe`), 409 (nombre ya existe).
+
+### DELETE /universidades/{id}
+
+Elimina la universidad y, en cascada, sus ofertas (tambien de favoritos y comparaciones). Responde 200 con `{ "message": "Universidad eliminada correctamente" }`.
+
+**Errores**: 400, 404.
+
+### POST /ofertas
+
+**Body**
+
+| Campo | Tipo | Reglas |
+|---|---|---|
+| `snies` | string | Obligatorio, unico, maximo 50 caracteres |
+| `ciudad` | string | Obligatorio, maximo 100 caracteres |
+| `costo` | entero | Obligatorio, `>= 0` |
+| `modalidad` | string | `presencial`, `virtual` o `hibrida` |
+| `jornada` | string | `diurna`, `nocturna` o `mixta` |
+| `duracion` | entero | Obligatorio, `>= 1` (semestres) |
+| `acreditacion` | boolean | Obligatorio |
+| `universidadId` | UUID | Debe existir |
+| `carreraId` | UUID | Debe existir |
+
+**Respuesta 201**
+
+```json
+{
+  "message": "Oferta creada correctamente",
+  "data": {
+    "id": "8b3f4e5a-3c4d-4e7f-a01b-2c3d4e5f6071",
+    "universidadId": "00000000-0000-4000-8000-000000000021",
+    "carreraId": "00000000-0000-4000-8000-000000000012",
+    "universidad": "Universidad Nacional de Colombia",
+    "carrera": "Derecho",
+    "imagenUrl": "/campus/nacional.webp",
+    "ciudad": "Bogota",
+    "costo": 5000000,
+    "modalidad": "presencial",
+    "jornada": "diurna",
+    "duracion": 10,
+    "acreditacion": true,
+    "snies": "2001"
+  }
+}
+```
+
+**Errores**: 400 (body invalido), 404 (`Universidad con ID <id> no existe` o `Carrera con ID <id> no existe`), 409 (`La oferta con SNIES <snies> ya existe`).
+
+### PUT /ofertas/{id}
+
+Mismo body con todos los campos opcionales; `universidadId` y `carreraId` se validan solo si se envian. Responde 200 con `{ "message": "Oferta actualizada correctamente", "data": <oferta> }`.
+
+**Errores**: 400, 404 (oferta, universidad o carrera), 409 (SNIES repetido).
+
+### DELETE /ofertas/{id}
+
+Elimina la oferta; se quita de favoritos y comparaciones (`mejorOferta` queda en `null`). Responde 200 con `{ "message": "Oferta eliminada correctamente" }`.
+
+**Errores**: 400, 404.

@@ -38,14 +38,15 @@ API REST en NestJS para busqueda, consulta y comparacion de ofertas academicas: 
 | UsuarioController | GET/PUT /usuarios/{id}, GET/PUT /usuarios/{id}/preferencias, GET/POST /usuarios/{id}/favoritos, DELETE /usuarios/{id}/favoritos/{ofertaId} | UsuarioService |
 | BusquedaController | POST /busquedas, GET /busquedas/{id}, GET /busquedas/{id}/resultados | BusquedaService + ScoringService |
 | ComparacionController | POST /comparaciones, GET /comparaciones/{id}, DELETE /comparaciones/{id} | ComparacionService |
-| CatalogoController | GET /carreras, GET /carreras/{id}, GET /universidades, GET /ofertas/{id} | CatalogoService |
+| CatalogoController | GET/POST /carreras, GET/PUT/DELETE /carreras/{id}, GET/POST /universidades, GET/PUT/DELETE /universidades/{id}, GET/POST /ofertas (filtros carreraId, universidadId, ciudad), GET/PUT/DELETE /ofertas/{id} | CatalogoService |
 
 DTOs clave (nombres exactos del diagrama):
 
 - `BusquedaRequestDTO`: carrera, ciudad, costoMax, modalidad, jornada, pesos.
 - `ResultadoBusquedaDTO`: oferta + puntaje + desglose. Siempre incluir el desglose.
 - `ComparacionRequestDTO`: ofertaIds[]. `ComparacionDTO`: tabla comparativa.
-- `OfertaAcademicaDTO`: costo, modalidad, duracion, acreditacion, SNIES.
+- `OfertaAcademicaDTO`: id, universidadId, carreraId, universidad, carrera, imagenUrl (de la universidad), ciudad, costo, modalidad, duracion, jornada, acreditacion, SNIES.
+- `CrearCarreraDto` / `CrearUniversidadDto` (con `imagenUrl` opcional) / `CrearOfertaDto` (relaciones por `universidadId` y `carreraId`) y sus `Actualizar...Dto` (`PartialType`); `FiltroOfertaDto`. CRUD del catalogo: buscar o validar (404), `merge` + `save`, relaciones como `universidad: { id }`, duplicados de nombre/SNIES responden 409; las escrituras responden `{ message, data }`.
 - `PreferenciaDTO`: pesos por criterio.
 - `CrearPerfilDto` / `ActualizarPerfilDto` (`PartialType`): apellido, ciudad, avatar. `RegistroDto.perfil` es obligatorio y anidado (`@ValidateNested` + `@Type`).
 - `ActualizarUsuarioDto`: `PartialType(OmitType(RegistroDto, ['perfil']))` + `perfil` opcional de tipo `ActualizarPerfilDto` (`@nestjs/mapped-types`, igual que la Clase 7b de `book-nestjs-5a`).
@@ -71,7 +72,7 @@ DTOs clave (nombres exactos del diagrama):
 - API y base de datos en contenedores: `docker compose up -d --build` (API en http://localhost:3000 o `PORT`). Dentro del contenedor la API usa `PORT=3000`, `POSTGRES_HOST=postgres` y `POSTGRES_PORT=5432`, que sobrescriben los valores de `.env`.
 - TypeORM (`@nestjs/typeorm` + `pg`): `TypeOrmModule.forRootAsync` en `src/app.module.ts` con `useFactory` que lee las variables `POSTGRES_*` con `getOrThrow`. `autoLoadEntities: true`: cada modulo registra sus entidades con `TypeOrmModule.forFeature([...])`. `synchronize: true` (crea y actualiza las tablas desde las entidades).
 - Entidades (TypeORM, nombres en espanol, `@PrimaryGeneratedColumn('uuid')`), cada una registrada con `TypeOrmModule.forFeature` en su modulo:
-  - `catalogo/carrera.entity.ts` (`Carrera`, tabla `carreras`) y `catalogo/universidad.entity.ts` (`Universidad`, tabla `universidades`): 1:N con `OfertaAcademica`.
+  - `catalogo/carrera.entity.ts` (`Carrera`, tabla `carreras`) y `catalogo/universidad.entity.ts` (`Universidad`, tabla `universidades`, con `imagenUrl` opcional): 1:N con `OfertaAcademica`.
   - `catalogo/oferta-academica.entity.ts` (`OfertaAcademica`, tabla `ofertas_academicas`): snies unico, ciudad, costo, modalidad, jornada, duracion, acreditacion; N:1 con `Universidad` y `Carrera`.
   - `usuarios/usuario.entity.ts` (`Usuario`, tabla `usuarios`): nombre, correo unico, clave, preferencias (jsonb), favoritos N:M con `OfertaAcademica` (tabla `usuario_favoritos`), perfil 1:1 opcional con `Perfil` (`@OneToOne` con `cascade: true` y `@JoinColumn` `perfil_id`).
   - `usuarios/perfil.entity.ts` (`Perfil`, tabla `perfiles`): apellido, ciudad, avatar opcional, `fechaRegistro` (`@CreateDateColumn`) y `fechaActualizacion` (`@UpdateDateColumn`). Se crea junto con el usuario en `POST /auth/registro` gracias al `cascade`.

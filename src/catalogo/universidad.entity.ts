@@ -18,6 +18,9 @@ export class Universidad {
   @Column()
   ciudad: string;
 
+  @Column({ type: 'varchar', nullable: true })
+  imagenUrl: string | null;
+
   @OneToMany(() => OfertaAcademica, (oferta) => oferta.universidad)
   ofertas: Relation<OfertaAcademica[]>;
 }

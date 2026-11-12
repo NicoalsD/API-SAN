@@ -55,36 +55,43 @@ const UNIVERSIDADES = [
     id: IDS_SEMILLA.universidades.nacional,
     nombre: 'Universidad Nacional de Colombia',
     ciudad: 'Bogota',
+    imagenUrl: '/campus/nacional.webp',
   },
   {
     id: IDS_SEMILLA.universidades.andes,
     nombre: 'Universidad de los Andes',
     ciudad: 'Bogota',
+    imagenUrl: '/campus/andes.webp',
   },
   {
     id: IDS_SEMILLA.universidades.javeriana,
     nombre: 'Universidad Javeriana',
     ciudad: 'Bogota',
+    imagenUrl: '/campus/javeriana.webp',
   },
   {
     id: IDS_SEMILLA.universidades.antioquia,
     nombre: 'Universidad de Antioquia',
     ciudad: 'Medellin',
+    imagenUrl: '/campus/antioquia.webp',
   },
   {
     id: IDS_SEMILLA.universidades.eafit,
     nombre: 'Universidad EAFIT',
     ciudad: 'Medellin',
+    imagenUrl: '/campus/eafit.webp',
   },
   {
     id: IDS_SEMILLA.universidades.valle,
     nombre: 'Universidad del Valle',
     ciudad: 'Cali',
+    imagenUrl: '/campus/valle.webp',
   },
   {
     id: IDS_SEMILLA.universidades.norte,
     nombre: 'Universidad del Norte',
     ciudad: 'Barranquilla',
+    imagenUrl: '/campus/norte.webp',
   },
 ];
 
@@ -229,13 +236,20 @@ async function asegurarUniversidad(
   id: string,
   nombre: string,
   ciudad: string,
+  imagenUrl: string,
 ) {
   const existente = await repositorio.findOneBy({ nombre });
   if (existente !== null) {
+    if (existente.imagenUrl === null) {
+      existente.imagenUrl = imagenUrl;
+      return repositorio.save(existente);
+    }
     return existente;
   }
 
-  return repositorio.save(repositorio.create({ id, nombre, ciudad }));
+  return repositorio.save(
+    repositorio.create({ id, nombre, ciudad, imagenUrl }),
+  );
 }
 
 export async function sembrarBd(dataSource: DataSource) {
@@ -260,6 +274,7 @@ export async function sembrarBd(dataSource: DataSource) {
         universidad.id,
         universidad.nombre,
         universidad.ciudad,
+        universidad.imagenUrl,
       ),
     );
   }
